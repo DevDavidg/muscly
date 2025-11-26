@@ -205,7 +205,7 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
           <h1 className="text-xl font-bold tracking-tighter">MUSCLY</h1>
         </div>
 
-        <div className="w-full max-w-sm space-y-8">
+        <div className="w-full max-w-sm space-y-8 mt-12 md:mt-0">
           <div className="aspect-square w-full bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl border border-neutral-800 relative group">
             {coverSrc ? (
               <>
