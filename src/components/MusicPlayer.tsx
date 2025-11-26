@@ -313,8 +313,23 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
                   >
                     {track.title}
                   </h3>
-                  <p className="text-xs text-neutral-500 truncate">
-                    WAV • Local Asset
+                  <p className="text-xs text-neutral-500 truncate flex items-center gap-1">
+                    {track.released ? (
+                      <a
+                        href={track.youtubeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-green-500 hover:text-green-400 font-medium"
+                      >
+                        Released
+                      </a>
+                    ) : (
+                      <span className="text-neutral-500 font-medium">
+                        Unreleased
+                      </span>
+                    )}
+                    <span>•</span> WAV
                   </p>
                 </div>
 

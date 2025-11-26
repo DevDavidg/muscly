@@ -7,6 +7,8 @@ export type Track = {
   fileName: string;
   coverName: string | null;
   duration: string | null;
+  released: boolean;
+  youtubeUrl?: string;
 };
 
 const ASSETS_DIR = path.join(process.cwd(), "assets", "temas");
@@ -90,12 +92,18 @@ export async function getTracks(): Promise<Track[]> {
 
     const duration = getWavDuration(path.join(ASSETS_DIR, wav));
 
+    const isReleased = baseName === "и1cio";
+
     return {
       id: baseName,
-      title: baseName, // You can format this further if needed
+      title: baseName,
       fileName: wav,
       coverName: cover || null,
       duration,
+      released: isReleased,
+      youtubeUrl: isReleased
+        ? "https://www.youtube.com/watch?v=Jwwubg3sFeY"
+        : undefined,
     };
   });
 }
