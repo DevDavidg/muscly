@@ -72,6 +72,15 @@ function getWavDuration(filePath: string): string | null {
   }
 }
 
+const TRACK_ORDER: Record<string, number> = {
+  и1cio: 1,
+  FRƎE: 2,
+  "∀DO": 3,
+  "W∀X": 4,
+  "∀yBrda feat.(Gonza)": 5,
+  "∀SSP": 6,
+};
+
 export async function getTracks(): Promise<Track[]> {
   if (!fs.existsSync(ASSETS_DIR)) return [];
 
@@ -79,7 +88,7 @@ export async function getTracks(): Promise<Track[]> {
   const wavFiles = files.filter((f) => f.endsWith(".wav"));
   const imageFiles = files.filter((f) => /\.(png|jpg|jpeg)$/i.test(f));
 
-  return wavFiles.map((wav) => {
+  const tracks = wavFiles.map((wav) => {
     const baseName = wav.replace(/\.wav$/i, "");
     let cover = imageFiles.find((img) => img.startsWith(baseName + "."));
 
@@ -105,5 +114,11 @@ export async function getTracks(): Promise<Track[]> {
         ? "https://www.youtube.com/watch?v=Jwwubg3sFeY"
         : undefined,
     };
+  });
+
+  return tracks.sort((a, b) => {
+    const orderA = TRACK_ORDER[a.id] ?? 999;
+    const orderB = TRACK_ORDER[b.id] ?? 999;
+    return orderA - orderB;
   });
 }

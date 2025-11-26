@@ -120,6 +120,25 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
     }
   };
 
+  const playNext = () => {
+    if (!currentTrack || initialTracks.length === 0) return;
+    const currentIndex = initialTracks.findIndex(
+      (t) => t.fileName === currentTrack.fileName
+    );
+    const nextIndex = (currentIndex + 1) % initialTracks.length;
+    playTrack(initialTracks[nextIndex]);
+  };
+
+  const playPrev = () => {
+    if (!currentTrack || initialTracks.length === 0) return;
+    const currentIndex = initialTracks.findIndex(
+      (t) => t.fileName === currentTrack.fileName
+    );
+    const prevIndex =
+      currentIndex <= 0 ? initialTracks.length - 1 : currentIndex - 1;
+    playTrack(initialTracks[prevIndex]);
+  };
+
   const onTimeUpdate = useCallback(() => {
     if (audioRef.current && !isSeekingRef.current) {
       setCurrentTime(audioRef.current.currentTime);
@@ -226,7 +245,11 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
             </div>
 
             <div className="flex items-center justify-center gap-8">
-              <button className="text-neutral-400 hover:text-white transition-colors">
+              <button
+                onClick={playPrev}
+                disabled={!currentTrack}
+                className="text-neutral-400 hover:text-white transition-colors disabled:opacity-50"
+              >
                 <SkipBack size={24} />
               </button>
               <button
@@ -240,7 +263,11 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
                   <Play size={28} fill="currentColor" className="ml-1" />
                 )}
               </button>
-              <button className="text-neutral-400 hover:text-white transition-colors">
+              <button
+                onClick={playNext}
+                disabled={!currentTrack}
+                className="text-neutral-400 hover:text-white transition-colors disabled:opacity-50"
+              >
                 <SkipForward size={24} />
               </button>
             </div>
@@ -257,7 +284,7 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
           </div>
 
           <div className="grid gap-2">
-            {initialTracks.map((track) => (
+            {initialTracks.map((track, index) => (
               <div
                 key={track.id}
                 onClick={() => playTrack(track)}
@@ -268,6 +295,9 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
                     : "hover:bg-neutral-900/50 hover:border-neutral-800/50"
                 )}
               >
+                <span className="text-neutral-600 font-mono text-sm w-5 text-right">
+                  {index + 1}
+                </span>
                 <div className="relative h-12 w-12 rounded-md overflow-hidden bg-neutral-800 flex-shrink-0">
                   {track.coverName ? (
                     <img
