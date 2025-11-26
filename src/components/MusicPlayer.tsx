@@ -200,7 +200,8 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
     <main className="flex min-h-screen flex-col md:flex-row bg-neutral-950 text-neutral-50">
       {/* Left: Player */}
       <div className="w-full md:w-1/2 lg:w-2/5 p-6 flex flex-col justify-center items-center border-b md:border-b-0 md:border-r border-neutral-800 min-h-[50vh] md:h-screen relative">
-        <div className="absolute top-6 left-6">
+        <div className="absolute top-6 left-6 flex items-center gap-2">
+          <img src="/favicon.svg" alt="Muscly" className="w-6 h-6" />
           <h1 className="text-xl font-bold tracking-tighter">MUSCLY</h1>
         </div>
 
