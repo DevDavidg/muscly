@@ -14,31 +14,58 @@ const ASSETS_DIR = path.join(process.cwd(), "assets", "temas");
 function getWavDuration(filePath: string): string | null {
   try {
     const fd = fs.openSync(filePath, "r");
-    const buffer = Buffer.alloc(44); // Read header
-    fs.readSync(fd, buffer, 0, 44, 0);
-    fs.closeSync(fd);
+    const headerBuffer = Buffer.alloc(12);
+    fs.readSync(fd, headerBuffer, 0, 12, 0);
 
-    // Check if RIFF and WAVE
-    if (buffer.toString("utf8", 0, 4) !== "RIFF" || buffer.toString("utf8", 8, 12) !== "WAVE") {
+    if (
+      headerBuffer.toString("utf8", 0, 4) !== "RIFF" ||
+      headerBuffer.toString("utf8", 8, 12) !== "WAVE"
+    ) {
+      fs.closeSync(fd);
       return null;
     }
 
-    // Read Byte Rate at offset 28 (Little Endian)
-    const byteRate = buffer.readUInt32LE(28);
-    
-    if (byteRate === 0) return null;
+    let offset = 12;
+    let sampleRate = 0;
+    let bitsPerSample = 0;
+    let numChannels = 0;
+    let dataSize = 0;
+    const chunkBuffer = Buffer.alloc(8);
+    const fmtBuffer = Buffer.alloc(16);
+    const { size: fileSize } = fs.statSync(filePath);
 
-    // Get file size
-    const { size } = fs.statSync(filePath);
-    const dataSize = size - 44; // Approximate data size (header is 44 usually)
+    while (offset < fileSize - 8) {
+      fs.readSync(fd, chunkBuffer, 0, 8, offset);
+      const chunkId = chunkBuffer.toString("utf8", 0, 4);
+      const chunkSize = chunkBuffer.readUInt32LE(4);
 
-    const seconds = dataSize / byteRate;
-    
+      if (chunkId === "fmt ") {
+        fs.readSync(fd, fmtBuffer, 0, 16, offset + 8);
+        numChannels = fmtBuffer.readUInt16LE(2);
+        sampleRate = fmtBuffer.readUInt32LE(4);
+        bitsPerSample = fmtBuffer.readUInt16LE(14);
+      } else if (chunkId === "data") {
+        dataSize = chunkSize;
+        break;
+      }
+
+      offset += 8 + chunkSize;
+      if (chunkSize % 2 !== 0) offset++;
+    }
+
+    fs.closeSync(fd);
+
+    if (!sampleRate || !bitsPerSample || !numChannels || !dataSize) return null;
+
+    const bytesPerSample = bitsPerSample / 8;
+    const totalSamples = dataSize / (bytesPerSample * numChannels);
+    const seconds = totalSamples / sampleRate;
+
     const min = Math.floor(seconds / 60);
     const sec = Math.floor(seconds % 60);
-    
+
     return `${min}:${sec.toString().padStart(2, "0")}`;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -53,19 +80,22 @@ export async function getTracks(): Promise<Track[]> {
   return wavFiles.map((wav) => {
     const baseName = wav.replace(/\.wav$/i, "");
     let cover = imageFiles.find((img) => img.startsWith(baseName + "."));
-    
-    if (!cover && baseName === "∀yBrda") {
-       cover = imageFiles.find(img => img.startsWith("AyBrda"));
+
+    // Specific manual fixes based on provided file list
+    if (!cover) {
+      if (baseName === "∀yBrda")
+        cover = imageFiles.find((img) => img.startsWith("AyBrda"));
+      // Handle "∀yBrda feat.(Gonza)" -> might look for "∀yBrda feat.(Gonza).png" which exists
     }
 
     const duration = getWavDuration(path.join(ASSETS_DIR, wav));
 
     return {
       id: baseName,
-      title: baseName,
+      title: baseName, // You can format this further if needed
       fileName: wav,
       coverName: cover || null,
-      duration
+      duration,
     };
   });
 }
