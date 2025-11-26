@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Play, Pause, Music, SkipBack, SkipForward } from "lucide-react";
 import { Track } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 interface MusicPlayerProps {
   initialTracks: Track[];
@@ -38,8 +39,8 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
 
       for (const track of tracksWithCovers) {
         imagePromises.push(
-          new Promise((resolve) => {
-            const img = new Image();
+          new Promise<void>((resolve) => {
+            const img = new window.Image();
             img.onload = () => {
               updateProgress();
               resolve();
@@ -92,8 +93,6 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
 
     audio.currentTime = 0;
     audioRef.current = audio;
-    audio.ontimeupdate = onTimeUpdate;
-    audio.onended = () => setIsPlaying(false);
     audio.onloadedmetadata = () => setDuration(audio!.duration);
     audio.play();
 
@@ -139,12 +138,35 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
     playTrack(initialTracks[prevIndex]);
   };
 
-  const onTimeUpdate = useCallback(() => {
-    if (audioRef.current && !isSeekingRef.current) {
-      setCurrentTime(audioRef.current.currentTime);
-      setDuration(audioRef.current.duration || 0);
-    }
-  }, []);
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleTimeUpdate = () => {
+      if (!isSeekingRef.current) {
+        setCurrentTime(audio.currentTime);
+        setDuration(audio.duration || 0);
+      }
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+      const currentIndex = initialTracks.findIndex(
+        (t) => t.fileName === currentTrack?.fileName
+      );
+      const nextIndex = (currentIndex + 1) % initialTracks.length;
+      playTrack(initialTracks[nextIndex]);
+    };
+
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("ended", handleEnded);
+
+    return () => {
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("ended", handleEnded);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTrack]);
 
   const formatTime = (time: number) => {
     if (isNaN(time)) return "0:00";
