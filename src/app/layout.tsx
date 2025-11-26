@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Muscly",
   description: "Local music player",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
