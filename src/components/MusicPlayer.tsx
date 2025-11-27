@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { Play, Pause, Music, SkipBack, SkipForward } from "lucide-react";
 import { Track } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
+import { useBassDetector } from "@/lib/use-bass-detector";
+import SpectrumVisualizer from "./SpectrumVisualizer";
 
 interface MusicPlayerProps {
   initialTracks: Track[];
@@ -24,6 +25,11 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const isSeekingRef = useRef(false);
+
+  const { bassData, connect: connectBass } = useBassDetector({
+    enabled: true,
+    threshold: 1.4,
+  });
 
   useEffect(() => {
     const preloadAssets = async () => {
@@ -60,6 +66,7 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
       for (const track of initialTracks) {
         const audio = new Audio();
         audio.preload = "auto";
+        audio.crossOrigin = "anonymous";
         audio.oncanplaythrough = () => {
           audioCache.current.set(track.fileName, audio);
         };
@@ -88,12 +95,15 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
         `/api/media?file=${encodeURIComponent(track.fileName)}`
       );
       audio.preload = "auto";
+      audio.crossOrigin = "anonymous";
       audioCache.current.set(track.fileName, audio);
     }
 
     audio.currentTime = 0;
     audioRef.current = audio;
     audio.onloadedmetadata = () => setDuration(audio!.duration);
+
+    connectBass(audio);
     audio.play();
 
     setCurrentTrack(track);
@@ -206,27 +216,86 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
         </div>
 
         <div className="w-full max-w-sm space-y-8 mt-12 md:mt-0">
-          <div className="aspect-square w-full bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl border border-neutral-800 relative group">
-            {coverSrc ? (
-              <>
-                {!coverLoaded && (
-                  <div className="absolute inset-0 bg-neutral-800 animate-pulse" />
-                )}
-                <img
-                  src={coverSrc}
-                  alt="Cover"
-                  className={cn(
-                    "w-full h-full object-cover",
-                    !coverLoaded && "opacity-0"
+          <div className="relative">
+            <div
+              className="absolute -inset-4 rounded-3xl opacity-60 blur-2xl transition-all duration-75"
+              style={{
+                background: bassData.subPeak
+                  ? `radial-gradient(circle, rgba(168,85,247,${Math.min(
+                      0.8,
+                      bassData.subNormalized
+                    )}) 0%, rgba(139,92,246,${Math.min(
+                      0.4,
+                      bassData.subNormalized * 0.5
+                    )}) 50%, transparent 70%)`
+                  : "transparent",
+                transform: `scale(${
+                  1 + (bassData.subPeak ? bassData.subNormalized * 0.15 : 0)
+                })`,
+                transition: "all 0.1s ease-out",
+              }}
+            />
+            <div
+              className="aspect-square w-full bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl border border-neutral-800 relative group transition-transform duration-75"
+              style={{
+                transform: bassData.subPeak ? "scale(1.02)" : "scale(1)",
+                borderColor: bassData.subPeak
+                  ? "rgba(168,85,247,0.5)"
+                  : undefined,
+              }}
+            >
+              {coverSrc ? (
+                <>
+                  {!coverLoaded && (
+                    <div className="absolute inset-0 bg-neutral-800 animate-pulse" />
                   )}
-                  onLoad={() => setCoverLoaded(true)}
-                />
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-neutral-800">
-                <Music size={80} />
-              </div>
+                  <img
+                    src={coverSrc}
+                    alt="Cover"
+                    className={cn(
+                      "w-full h-full object-cover",
+                      !coverLoaded && "opacity-0"
+                    )}
+                    onLoad={() => setCoverLoaded(true)}
+                  />
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-neutral-800">
+                  <Music size={80} />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div
+            className={cn(
+              "flex items-center justify-center gap-2 transition-opacity duration-200",
+              bassData.peak ? "opacity-100" : "opacity-30 blur-[1px]"
             )}
+          >
+            <div className="flex items-end gap-[3px] h-4">
+              {[0.3, 0.5, 0.7, 0.9, 1, 0.9, 0.7, 0.5, 0.3].map((mult, i) => (
+                <div
+                  key={i}
+                  className="w-1 bg-purple-500 rounded-full transition-all duration-75"
+                  style={{
+                    height: `${Math.max(4, bassData.normalized * 16 * mult)}px`,
+                    opacity: bassData.peak ? 1 : 0.5,
+                  }}
+                />
+              ))}
+            </div>
+            <span className="text-[10px] font-mono text-purple-400/70 uppercase tracking-wider">
+              808
+            </span>
+          </div>
+
+          <div className="w-full">
+            <SpectrumVisualizer
+              data={bassData.frequencyData}
+              width={300}
+              height={60}
+            />
           </div>
 
           <div className="space-y-6">
