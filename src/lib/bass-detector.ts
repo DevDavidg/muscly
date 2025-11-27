@@ -19,7 +19,7 @@ const audioNodeCache = new WeakMap<HTMLAudioElement, AudioNodeCache>();
 
 export class BassDetector {
   private currentCache: AudioNodeCache | null = null;
-  private dataArray: Uint8Array | null = null;
+  private dataArray: Uint8Array<ArrayBuffer> | null = null;
   private animationId: number | null = null;
   private callback: BassCallback | null = null;
   private connectedElement: HTMLAudioElement | null = null;
@@ -62,7 +62,7 @@ export class BassDetector {
     }
 
     this.currentCache = cache;
-    this.dataArray = new Uint8Array(cache.analyser.frequencyBinCount);
+    this.dataArray = new Uint8Array(cache.analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>;
 
     if (cache.context.state === "suspended") {
       cache.context.resume();
