@@ -73,12 +73,14 @@ function getWavDuration(filePath: string): string | null {
 }
 
 const TRACK_ORDER: Record<string, number> = {
-  и1cio: 1,
-  FRƎE: 2,
-  "∀DO": 3,
+  FRƎE: 1,
+  "∀DO": 2,
+  и1cio: 3,
   "W∀X": 4,
-  "∀yBrda feat.(Gonza)": 5,
+  "∀yBrda feat. (Gonza)": 5,
   "∀SSP": 6,
+  "HRꓷ": 7,
+  "ꓷYƧ feat. (SXNTY)": 8,
 };
 
 export async function getTracks(): Promise<Track[]> {
@@ -90,14 +92,7 @@ export async function getTracks(): Promise<Track[]> {
 
   const tracks = wavFiles.map((wav) => {
     const baseName = wav.replace(/\.wav$/i, "");
-    let cover = imageFiles.find((img) => img.startsWith(baseName + "."));
-
-    // Specific manual fixes based on provided file list
-    if (!cover) {
-      if (baseName === "∀yBrda")
-        cover = imageFiles.find((img) => img.startsWith("AyBrda"));
-      // Handle "∀yBrda feat.(Gonza)" -> might look for "∀yBrda feat.(Gonza).png" which exists
-    }
+    const cover = imageFiles.find((img) => img.startsWith(baseName + "."));
 
     const duration = getWavDuration(path.join(ASSETS_DIR, wav));
 

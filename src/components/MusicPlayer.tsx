@@ -34,15 +34,17 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
   useEffect(() => {
     const preloadAssets = async () => {
       const imagePromises: Promise<void>[] = [];
+      const audioPromises: Promise<void>[] = [];
       const tracksWithCovers = initialTracks.filter((t) => t.coverName);
-      const totalImages = tracksWithCovers.length;
+      const totalAssets = tracksWithCovers.length + initialTracks.length;
       let loaded = 0;
 
       const updateProgress = () => {
         loaded++;
-        setLoadProgress(Math.round((loaded / totalImages) * 100));
+        setLoadProgress(Math.round((loaded / totalAssets) * 100));
       };
 
+      // Precargar imágenes
       for (const track of tracksWithCovers) {
         imagePromises.push(
           new Promise<void>((resolve) => {
@@ -60,18 +62,60 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
         );
       }
 
-      await Promise.all(imagePromises);
-      setIsLoading(false);
-
+      // Precargar TODOS los audios de forma forzada
       for (const track of initialTracks) {
-        const audio = new Audio();
-        audio.preload = "auto";
-        audio.crossOrigin = "anonymous";
-        audio.oncanplaythrough = () => {
-          audioCache.current.set(track.fileName, audio);
-        };
-        audio.src = `/api/media?file=${encodeURIComponent(track.fileName)}`;
+        audioPromises.push(
+          new Promise<void>((resolve) => {
+            const audio = new Audio();
+            audio.preload = "auto";
+            audio.crossOrigin = "anonymous";
+            
+            // Forzar la carga completa del audio
+            const handleCanPlayThrough = () => {
+              audioCache.current.set(track.fileName, audio);
+              updateProgress();
+              audio.removeEventListener("canplaythrough", handleCanPlayThrough);
+              audio.removeEventListener("error", handleError);
+              audio.removeEventListener("loadeddata", handleLoadedData);
+              resolve();
+            };
+
+            const handleLoadedData = () => {
+              // Si ya se cargó suficiente, intentar reproducir y pausar para forzar carga completa
+              if (audio.readyState >= 3) {
+                audio.play().then(() => {
+                  audio.pause();
+                  audio.currentTime = 0;
+                }).catch(() => {
+                  // Ignorar errores de reproducción
+                });
+              }
+            };
+
+            const handleError = () => {
+              // Aún así lo agregamos al cache aunque haya error
+              audioCache.current.set(track.fileName, audio);
+              updateProgress();
+              audio.removeEventListener("canplaythrough", handleCanPlayThrough);
+              audio.removeEventListener("error", handleError);
+              audio.removeEventListener("loadeddata", handleLoadedData);
+              resolve();
+            };
+
+            audio.addEventListener("canplaythrough", handleCanPlayThrough);
+            audio.addEventListener("error", handleError);
+            audio.addEventListener("loadeddata", handleLoadedData);
+            
+            // Establecer src y forzar la carga
+            audio.src = `/api/media?file=${encodeURIComponent(track.fileName)}`;
+            audio.load();
+          })
+        );
       }
+
+      // Esperar a que TODAS las imágenes y TODOS los audios estén cargados
+      await Promise.all([...imagePromises, ...audioPromises]);
+      setIsLoading(false);
     };
 
     preloadAssets();
