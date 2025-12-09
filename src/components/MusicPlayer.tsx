@@ -326,7 +326,10 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
 
           <div className="relative w-full max-w-sm">
             <div className="absolute -inset-8 bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-transparent rounded-3xl blur-3xl opacity-50" />
-            <div className="relative aspect-square w-full bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl border border-neutral-800 group cursor-pointer" onClick={handlePendingAutoPlay}>
+            <div
+              className="relative aspect-square w-full bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl border border-neutral-800 group cursor-pointer"
+              onClick={handlePendingAutoPlay}
+            >
               {pendingAutoPlay.coverUrl ? (
                 <img
                   src={pendingAutoPlay.coverUrl}
