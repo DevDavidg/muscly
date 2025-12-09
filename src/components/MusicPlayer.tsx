@@ -189,7 +189,9 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
       audio.onloadedmetadata = () => setDuration(audio.duration);
 
       connectBass(audio);
-      audio.play();
+      audio.play().catch((err) => {
+        console.error("Play failed:", err);
+      });
 
       setCurrentTrack(track);
       setCoverLoaded(false);
@@ -206,17 +208,30 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
   );
 
   useEffect(() => {
-    if (!isLoading && initialTracks.length > 0 && !autoPlayExecuted.current) {
+    if (!isLoading && initialTracks.length > 0) {
       const trackId = searchParams.get("track");
       if (trackId) {
-        const track = initialTracks.find((t) => t.id === trackId);
-        if (track) {
-          autoPlayExecuted.current = true;
-          setTimeout(() => playTrack(track), 100);
+        const decodedTrackId = decodeURIComponent(trackId);
+        const track = initialTracks.find((t) => t.id === decodedTrackId);
+        if (track && currentTrack?.id !== track.id) {
+          if (!autoPlayExecuted.current) {
+            autoPlayExecuted.current = true;
+            const playWhenReady = () => {
+              const audio = audioCache.current.get(track.fileName);
+              if (audio && audio.readyState >= 2) {
+                playTrack(track);
+              } else {
+                setTimeout(playWhenReady, 100);
+              }
+            };
+            setTimeout(playWhenReady, 300);
+          }
         }
+      } else {
+        autoPlayExecuted.current = false;
       }
     }
-  }, [isLoading, searchParams, initialTracks, playTrack]);
+  }, [isLoading, searchParams, initialTracks, playTrack, currentTrack]);
 
   const playNext = () => {
     if (!currentTrack || initialTracks.length === 0) return;
