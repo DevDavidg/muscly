@@ -70,7 +70,7 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
               updateProgress();
               resolve();
             };
-            img.src = `/api/media?file=${encodeURIComponent(track.coverName!)}`;
+            img.src = track.coverUrl || "";
           })
         );
       }
@@ -123,7 +123,7 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
             audio.addEventListener("loadeddata", handleLoadedData);
 
             // Establecer src y forzar la carga
-            audio.src = `/api/media?file=${encodeURIComponent(track.fileName)}`;
+            audio.src = track.audioUrl;
             audio.load();
           })
         );
@@ -177,9 +177,7 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
 
       let audio = audioCache.current.get(track.fileName);
       if (!audio) {
-        audio = new Audio(
-          `/api/media?file=${encodeURIComponent(track.fileName)}`
-        );
+        audio = new Audio(track.audioUrl);
         audio.preload = "auto";
         audio.crossOrigin = "anonymous";
         audioCache.current.set(track.fileName, audio);
@@ -196,11 +194,7 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
 
       setCurrentTrack(track);
       setCoverLoaded(false);
-      setCoverSrc(
-        track.coverName
-          ? `/api/media?file=${encodeURIComponent(track.coverName)}`
-          : null
-      );
+      setCoverSrc(track.coverUrl || null);
       setIsPlaying(true);
       setCurrentTime(0);
       setDuration(audio.duration || 0);
@@ -547,11 +541,9 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
                   {index + 1}
                 </span>
                 <div className="relative h-10 w-10 md:h-12 md:w-12 rounded-md overflow-hidden bg-neutral-800 shrink-0">
-                  {track.coverName ? (
+                  {track.coverUrl ? (
                     <img
-                      src={`/api/media?file=${encodeURIComponent(
-                        track.coverName
-                      )}`}
+                      src={track.coverUrl}
                       alt={track.title}
                       className="h-full w-full object-cover"
                     />
@@ -606,6 +598,14 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
                       <span className="text-neutral-500 font-medium">
                         Unreleased
                       </span>
+                    )}
+                    {track.notLicenced && (
+                      <>
+                        <span>•</span>
+                        <span className="text-orange-500 font-medium">
+                          not licenced
+                        </span>
+                      </>
                     )}
                     <span>•</span> WAV
                   </p>
