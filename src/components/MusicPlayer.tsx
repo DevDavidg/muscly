@@ -30,6 +30,7 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
   const [coverSrc, setCoverSrc] = useState<string | null>(null);
   const [coverLoaded, setCoverLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [pendingAutoPlay, setPendingAutoPlay] = useState<Track | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioCache = useRef<Map<string, HTMLAudioElement>>(new Map());
@@ -213,25 +214,35 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
       if (trackId) {
         const decodedTrackId = decodeURIComponent(trackId);
         const track = initialTracks.find((t) => t.id === decodedTrackId);
-        if (track && currentTrack?.id !== track.id) {
-          if (!autoPlayExecuted.current) {
-            autoPlayExecuted.current = true;
-            const playWhenReady = () => {
-              const audio = audioCache.current.get(track.fileName);
-              if (audio && audio.readyState >= 2) {
-                playTrack(track);
-              } else {
-                setTimeout(playWhenReady, 100);
-              }
-            };
-            setTimeout(playWhenReady, 300);
-          }
+        if (
+          track &&
+          currentTrack?.id !== track.id &&
+          !autoPlayExecuted.current
+        ) {
+          autoPlayExecuted.current = true;
+          setPendingAutoPlay(track);
         }
       } else {
         autoPlayExecuted.current = false;
+        setPendingAutoPlay(null);
       }
     }
-  }, [isLoading, searchParams, initialTracks, playTrack, currentTrack]);
+  }, [isLoading, searchParams, initialTracks, currentTrack]);
+
+  const handlePendingAutoPlay = useCallback(() => {
+    if (pendingAutoPlay) {
+      const playWhenReady = () => {
+        const audio = audioCache.current.get(pendingAutoPlay.fileName);
+        if (audio && audio.readyState >= 2) {
+          playTrack(pendingAutoPlay);
+          setPendingAutoPlay(null);
+        } else {
+          setTimeout(playWhenReady, 100);
+        }
+      };
+      playWhenReady();
+    }
+  }, [pendingAutoPlay, playTrack]);
 
   const playNext = () => {
     if (!currentTrack || initialTracks.length === 0) return;
@@ -304,6 +315,31 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
             <p className="text-neutral-500 text-xs text-center font-mono">
               {loadProgress}%
             </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (pendingAutoPlay) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-neutral-950 text-neutral-50">
+        <div className="flex flex-col items-center gap-6 w-full max-w-xs p-6 text-center">
+          <h1 className="text-4xl font-black tracking-tighter">MUSCLY</h1>
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">
+                {pendingAutoPlay.title}
+              </h2>
+              <p className="text-neutral-500 text-sm">Ready to play</p>
+            </div>
+            <button
+              onClick={handlePendingAutoPlay}
+              className="h-16 w-16 flex items-center justify-center bg-white text-black rounded-full hover:scale-105 active:scale-95 transition-all"
+            >
+              <Play size={28} fill="currentColor" className="ml-1" />
+            </button>
+            <p className="text-neutral-500 text-xs">Click to start playback</p>
           </div>
         </div>
       </div>
