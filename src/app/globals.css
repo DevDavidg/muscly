@@ -120,3 +120,101 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  @media (max-height: 1000px) {
+    .reduce-808 {
+      gap: 0.375rem !important;
+    }
+    .reduce-808 > div:first-child {
+      height: 0.75rem !important;
+    }
+    .reduce-808 span {
+      font-size: 0.5625rem !important;
+    }
+  }
+
+  @media (max-height: 900px) {
+    .reduce-808 {
+      gap: 0.25rem !important;
+    }
+    .reduce-808 > div:first-child {
+      height: 0.625rem !important;
+    }
+    .reduce-808 span {
+      font-size: 0.5rem !important;
+    }
+  }
+
+  @media (max-height: 800px) {
+    .reduce-808 {
+      gap: 0.125rem !important;
+    }
+    .reduce-808 > div:first-child {
+      height: 0.5rem !important;
+    }
+    .reduce-808 span {
+      font-size: 0.4375rem !important;
+    }
+  }
+
+  @media (max-height: 700px) {
+    .reduce-808 {
+      gap: 0.125rem !important;
+    }
+    .reduce-808 > div:first-child {
+      height: 0.375rem !important;
+    }
+    .reduce-808 span {
+      font-size: 0.375rem !important;
+    }
+  }
+
+  @media (max-height: 1000px) {
+    .reduce-blur {
+      inset: -0.75rem !important;
+    }
+  }
+
+  @media (max-height: 900px) {
+    .reduce-blur {
+      inset: -0.5rem !important;
+    }
+  }
+
+  @media (max-height: 800px) {
+    .reduce-blur {
+      inset: -0.25rem !important;
+    }
+  }
+
+  @media (max-height: 700px) {
+    .reduce-blur {
+      inset: -0.125rem !important;
+    }
+  }
+
+  @media (max-height: 1000px) {
+    .reduce-cover {
+      max-width: 85% !important;
+    }
+  }
+
+  @media (max-height: 900px) {
+    .reduce-cover {
+      max-width: 75% !important;
+    }
+  }
+
+  @media (max-height: 800px) {
+    .reduce-cover {
+      max-width: 65% !important;
+    }
+  }
+
+  @media (max-height: 700px) {
+    .reduce-cover {
+      max-width: 55% !important;
+    }
+  }
+}
