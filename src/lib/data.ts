@@ -13,31 +13,9 @@ export interface Track {
   youtubeUrl?: string;
 }
 
-const TRACK_ORDER: Record<string, number> = {
-  FRƎE: 1,
-  "∀DO": 2,
-  и1cio: 3,
-  "W∀X": 4,
-  "∀yBrda feat. (Gonza)": 5,
-  "∀SSP": 6,
-  HRꓷ: 7,
-  "ꓷYƧ feat. (SXNTY)": 8,
-};
-
-const TRACK_DURATIONS: Record<string, number> = {
-  FRƎE: 0,
-  "∀DO": 0,
-  и1cio: 0,
-  "W∀X": 0,
-  "∀yBrda feat. (Gonza)": 0,
-  "∀SSP": 0,
-  HRꓷ: 0,
-  "ꓷYƧ feat. (SXNTY)": 0,
-};
-
 async function getWavDuration(url: string): Promise<number> {
   try {
-    const response = await fetch(url, { headers: { Range: "bytes=0-1024" } });
+    const response = await fetch(url, { headers: { Range: "bytes=0-65535" } });
     const buffer = await response.arrayBuffer();
     const view = new DataView(buffer);
 
@@ -94,15 +72,13 @@ export async function getTracks(): Promise<Track[]> {
     )
   );
 
+  const defaultCoverBlob =
+    imageBlobs.find((b) => b.pathname.toLowerCase() === "portada.png") || null;
+
   const tracks = await Promise.all(
     wavBlobs.map(async (wavBlob) => {
       const baseName = wavBlob.pathname.replace(/\.wav$/i, "");
-      const coverBlob = imageBlobs.find((img) =>
-        img.pathname.startsWith(baseName + ".")
-      );
-
-      const duration =
-        TRACK_DURATIONS[baseName] || (await getWavDuration(wavBlob.url)) || 0;
+      const duration = (await getWavDuration(wavBlob.url)) || 0;
 
       const isReleased = baseName === "и1cio";
       const notLicenced = baseName === "W∀X";
@@ -111,9 +87,9 @@ export async function getTracks(): Promise<Track[]> {
         id: baseName,
         title: baseName,
         fileName: wavBlob.pathname,
-        coverName: coverBlob?.pathname || null,
+        coverName: defaultCoverBlob?.pathname || null,
         audioUrl: wavBlob.url,
-        coverUrl: coverBlob?.url || null,
+        coverUrl: defaultCoverBlob?.url || null,
         duration,
         released: isReleased,
         notLicenced,
@@ -124,19 +100,10 @@ export async function getTracks(): Promise<Track[]> {
     })
   );
 
-  const filteredTracks = tracks.filter((track) => {
-    if (track.id === "∀yBrda") {
-      const hasFeatVersion = tracks.some(
-        (t) => t.id === "∀yBrda feat. (Gonza)"
-      );
-      return !hasFeatVersion;
-    }
-    return true;
+  const collator = new Intl.Collator(undefined, {
+    sensitivity: "base",
+    numeric: true,
   });
 
-  return filteredTracks.sort((a, b) => {
-    const orderA = TRACK_ORDER[a.id] ?? 999;
-    const orderB = TRACK_ORDER[b.id] ?? 999;
-    return orderA - orderB;
-  });
+  return tracks.sort((a, b) => collator.compare(a.title, b.title));
 }
