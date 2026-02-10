@@ -31,6 +31,7 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
   const [coverLoaded, setCoverLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [pendingAutoPlay, setPendingAutoPlay] = useState<Track | null>(null);
+  const [pendingCoverError, setPendingCoverError] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioCache = useRef<Map<string, HTMLAudioElement>>(new Map());
@@ -214,6 +215,7 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
           !autoPlayExecuted.current
         ) {
           autoPlayExecuted.current = true;
+          setPendingCoverError(false);
           setPendingAutoPlay(track);
         }
       } else {
@@ -330,11 +332,12 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
               className="relative aspect-square w-full bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl border border-neutral-800 group cursor-pointer"
               onClick={handlePendingAutoPlay}
             >
-              {pendingAutoPlay.coverUrl ? (
+              {pendingAutoPlay.coverUrl && !pendingCoverError ? (
                 <img
                   src={pendingAutoPlay.coverUrl}
                   alt={pendingAutoPlay.title}
                   className="w-full h-full object-cover"
+                  onError={() => setPendingCoverError(true)}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-neutral-800">
@@ -442,6 +445,15 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
                       !coverLoaded && "opacity-0"
                     )}
                     onLoad={() => setCoverLoaded(true)}
+                    onError={() => {
+                      if (coverSrc === "/portada.png") {
+                        setCoverSrc(null);
+                        setCoverLoaded(true);
+                      } else {
+                        setCoverSrc("/portada.png");
+                        setCoverLoaded(false);
+                      }
+                    }}
                   />
                 </>
               ) : (

@@ -73,7 +73,9 @@ export async function getTracks(): Promise<Track[]> {
   );
 
   const defaultCoverBlob =
-    imageBlobs.find((b) => b.pathname.toLowerCase() === "portada.png") || null;
+    imageBlobs.find((b) =>
+      /portada\.png$/i.test(b.pathname.replace(/^\/+/, ""))
+    ) || null;
 
   const tracks = await Promise.all(
     wavBlobs.map(async (wavBlob) => {
