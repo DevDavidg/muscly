@@ -35,6 +35,7 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioCache = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const coverImgRef = useRef<HTMLImageElement | null>(null);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const isSeekingRef = useRef(false);
@@ -260,6 +261,20 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
   };
 
   useEffect(() => {
+    if (!coverSrc) return;
+    const t1 = requestAnimationFrame(() => {
+      if (coverImgRef.current?.complete && coverImgRef.current.naturalWidth > 0) {
+        setCoverLoaded(true);
+      }
+    });
+    const t2 = setTimeout(() => setCoverLoaded(true), 1500);
+    return () => {
+      cancelAnimationFrame(t1);
+      clearTimeout(t2);
+    };
+  }, [coverSrc]);
+
+  useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -438,6 +453,7 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
                     <div className="absolute inset-0 bg-neutral-800 animate-pulse" />
                   )}
                   <img
+                    ref={coverImgRef}
                     src={coverSrc}
                     alt="Cover"
                     className={cn(
@@ -446,13 +462,8 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
                     )}
                     onLoad={() => setCoverLoaded(true)}
                     onError={() => {
-                      if (coverSrc === "/portada.png") {
-                        setCoverSrc(null);
-                        setCoverLoaded(true);
-                      } else {
-                        setCoverSrc("/portada.png");
-                        setCoverLoaded(false);
-                      }
+                      setCoverSrc(null);
+                      setCoverLoaded(true);
                     }}
                   />
                 </>
