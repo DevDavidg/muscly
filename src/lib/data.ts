@@ -11,7 +11,29 @@ export interface Track {
   released: boolean;
   notLicenced: boolean;
   youtubeUrl?: string;
+  spotifyUrl?: string;
 }
+
+const RELEASES: Record<
+  string,
+  { youtube: string; spotify: string }
+> = {
+  "и1cio": {
+    youtube: "https://www.youtube.com/watch?v=Jwwubg3sFeY",
+    spotify:
+      "https://open.spotify.com/intl-es/track/5FVbw85IR7yOIc1DWueQjC?si=6656ced9c0ba4c54",
+  },
+  "∀DO": {
+    youtube: "https://www.youtube.com/watch?v=vZTBZ2Wher4",
+    spotify:
+      "https://open.spotify.com/intl-es/track/4VFONIImDcVipzPS21afUL?si=604be836429e4b70",
+  },
+  "∀yBrda feat. (Gonza)": {
+    youtube: "https://www.youtube.com/watch?v=_7BAgF6zW0I",
+    spotify:
+      "https://open.spotify.com/intl-es/track/3Ruz3uGk9knLeulQjh5ALO?si=d1affbc0711f4e24",
+  },
+};
 
 async function getWavDuration(url: string): Promise<number> {
   try {
@@ -64,17 +86,17 @@ export async function getTracks(): Promise<Track[]> {
   });
 
   const wavBlobs = blobs.filter((b) =>
-    b.pathname.toLowerCase().endsWith(".wav")
+    b.pathname.toLowerCase().endsWith(".wav"),
   );
   const imageBlobs = blobs.filter((b) =>
     [".png", ".jpg", ".jpeg"].some((ext) =>
-      b.pathname.toLowerCase().endsWith(ext)
-    )
+      b.pathname.toLowerCase().endsWith(ext),
+    ),
   );
 
   const defaultCoverBlob =
     imageBlobs.find((b) =>
-      /portada\.png$/i.test(b.pathname.replace(/^\/+/, ""))
+      /portada\.png$/i.test(b.pathname.replace(/^\/+/, "")),
     ) || null;
 
   const tracks = await Promise.all(
@@ -82,7 +104,7 @@ export async function getTracks(): Promise<Track[]> {
       const baseName = wavBlob.pathname.replace(/\.wav$/i, "");
       const duration = (await getWavDuration(wavBlob.url)) || 0;
 
-      const isReleased = baseName === "и1cio";
+      const release = RELEASES[baseName];
       const notLicenced = baseName === "W∀X";
 
       return {
@@ -93,13 +115,12 @@ export async function getTracks(): Promise<Track[]> {
         audioUrl: wavBlob.url,
         coverUrl: defaultCoverBlob?.url || null,
         duration,
-        released: isReleased,
+        released: !!release,
         notLicenced,
-        youtubeUrl: isReleased
-          ? "https://www.youtube.com/watch?v=Jwwubg3sFeY"
-          : undefined,
+        youtubeUrl: release?.youtube,
+        spotifyUrl: release?.spotify,
       };
-    })
+    }),
   );
 
   const collator = new Intl.Collator(undefined, {

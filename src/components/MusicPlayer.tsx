@@ -261,18 +261,18 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
   };
 
   useEffect(() => {
-    if (!coverSrc) return;
+    if (!coverSrc || coverLoaded) return;
     const t1 = requestAnimationFrame(() => {
       if (coverImgRef.current?.complete && coverImgRef.current.naturalWidth > 0) {
         setCoverLoaded(true);
       }
     });
-    const t2 = setTimeout(() => setCoverLoaded(true), 1500);
+    const t2 = setTimeout(() => setCoverLoaded(true), 800);
     return () => {
       cancelAnimationFrame(t1);
       clearTimeout(t2);
     };
-  }, [coverSrc]);
+  }, [coverSrc, coverLoaded]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -375,9 +375,35 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
               <h2 className="text-3xl font-bold mb-2">
                 {pendingAutoPlay.title}
               </h2>
-              <div className="flex items-center justify-center gap-2 text-sm text-neutral-400">
+              <div className="flex items-center justify-center gap-2 text-sm text-neutral-400 flex-wrap">
                 {pendingAutoPlay.released ? (
-                  <span className="text-green-500 font-medium">Released</span>
+                  <>
+                    {pendingAutoPlay.spotifyUrl && (
+                      <a
+                        href={pendingAutoPlay.spotifyUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-green-500 hover:text-green-400 font-medium"
+                      >
+                        Spotify
+                      </a>
+                    )}
+                    {pendingAutoPlay.spotifyUrl && pendingAutoPlay.youtubeUrl && (
+                      <span>•</span>
+                    )}
+                    {pendingAutoPlay.youtubeUrl && (
+                      <a
+                        href={pendingAutoPlay.youtubeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-green-500 hover:text-green-400 font-medium"
+                      >
+                        YouTube
+                      </a>
+                    )}
+                  </>
                 ) : (
                   <span>Unreleased</span>
                 )}
@@ -651,17 +677,35 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
                   >
                     {track.title}
                   </h3>
-                  <p className="text-[10px] md:text-xs text-neutral-500 truncate flex items-center gap-1">
+                  <p className="text-[10px] md:text-xs text-neutral-500 truncate flex items-center gap-1 flex-wrap">
                     {track.released ? (
-                      <a
-                        href={track.youtubeUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-green-500 hover:text-green-400 font-medium"
-                      >
-                        Released
-                      </a>
+                      <>
+                        {track.spotifyUrl && (
+                          <a
+                            href={track.spotifyUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-green-500 hover:text-green-400 font-medium"
+                          >
+                            Spotify
+                          </a>
+                        )}
+                        {track.spotifyUrl && track.youtubeUrl && (
+                          <span className="text-neutral-600">•</span>
+                        )}
+                        {track.youtubeUrl && (
+                          <a
+                            href={track.youtubeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-green-500 hover:text-green-400 font-medium"
+                          >
+                            YouTube
+                          </a>
+                        )}
+                      </>
                     ) : (
                       <span className="text-neutral-500 font-medium">
                         Unreleased
