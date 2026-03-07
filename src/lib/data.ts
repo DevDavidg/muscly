@@ -1,4 +1,4 @@
-import { sql } from "@/lib/db";
+import { getSql } from "@/lib/db";
 
 export interface Track {
   id: string;
@@ -15,6 +15,7 @@ export interface Track {
 }
 
 export async function getTracks(): Promise<Track[]> {
+  const sql = getSql();
   const rows = await sql`
     SELECT id, title, file_name, cover_name, audio_bucket_id, cover_bucket_id, duration, released, not_licenced, youtube_url, spotify_url
     FROM tracks

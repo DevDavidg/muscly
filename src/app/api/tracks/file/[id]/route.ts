@@ -30,7 +30,7 @@ export async function GET(
     const row = r.rows[0];
     const data = row.data as Buffer;
     const mime = (row.mime_type as string) ?? "application/octet-stream";
-    return new NextResponse(data, {
+    return new NextResponse(new Uint8Array(data), {
       headers: {
         "Content-Type": mime,
         "Cache-Control": "public, max-age=3600",
