@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import { getTracks } from "@/lib/data";
 import MusicPlayer from "@/components/MusicPlayer";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   try {
     const tracks = await getTracks();

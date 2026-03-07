@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { getBassDetector, BassData } from "./bass-detector";
+import { getBassDetector, BassData, emptyBassData } from "./bass-detector";
 
 interface UseBassDetectorOptions {
   enabled?: boolean;
@@ -20,15 +20,7 @@ export function useBassDetector(
 ): UseBassDetectorReturn {
   const { enabled = true, threshold = 1.3 } = options;
   const detectorRef = useRef(getBassDetector());
-
-  const [bassData, setBassData] = useState<BassData>({
-    energy: 0,
-    peak: false,
-    normalized: 0,
-    frequencyData: new Uint8Array(),
-    subPeak: false,
-    subNormalized: 0,
-  });
+  const [bassData, setBassData] = useState<BassData>(emptyBassData);
 
   useEffect(() => {
     if (threshold) {
@@ -46,14 +38,7 @@ export function useBassDetector(
 
   const disconnect = useCallback(() => {
     detectorRef.current.disconnect();
-    setBassData({
-      energy: 0,
-      peak: false,
-      normalized: 0,
-      frequencyData: new Uint8Array(),
-      subPeak: false,
-      subNormalized: 0,
-    });
+    setBassData(emptyBassData);
   }, []);
 
   const setThreshold = useCallback((value: number) => {

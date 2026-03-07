@@ -119,6 +119,58 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.14);
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 9999px;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    margin-top: -4px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+    transition: transform 0.1s ease;
+  }
+  input[type="range"]:hover::-webkit-slider-thumb {
+    transform: scale(1.25);
+  }
+  input[type="range"]::-moz-range-track {
+    height: 4px;
+    border-radius: 9999px;
+    background: rgb(38, 38, 38);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    border: none;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  }
 }
 
 @layer utilities {
@@ -192,6 +244,20 @@
     .reduce-blur {
       inset: -0.125rem !important;
     }
+  }
+
+  @keyframes toast-enter {
+    from {
+      opacity: 0;
+      transform: translateX(1rem) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+  }
+  .animate-toast-enter {
+    animation: toast-enter 0.32s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   @media (max-height: 1000px) {
