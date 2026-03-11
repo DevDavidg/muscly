@@ -1,6 +1,6 @@
 "use client";
 
-import { Music, Copy, Check, Play } from "lucide-react";
+import { Music, Copy, Check, Play, Download } from "lucide-react";
 import { Track } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
@@ -147,6 +147,15 @@ export default function TrackLibrary({
                 <div className="text-[10px] md:text-xs text-neutral-600 font-mono tabular-nums">
                   {formatTime(track.duration)}
                 </div>
+                <a
+                  href={track.audioUrl}
+                  download={track.fileName}
+                  onClick={(e) => e.stopPropagation()}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-neutral-800 rounded text-neutral-400 hover:text-white"
+                  title="Descargar WAV"
+                >
+                  <Download size={14} className="md:w-4 md:h-4" />
+                </a>
                 <button
                   onClick={(e) => onCopyLink(track, e)}
                   className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-neutral-800 rounded"

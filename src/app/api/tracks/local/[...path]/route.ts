@@ -25,10 +25,15 @@ export async function GET(
   let mime = "application/octet-stream";
   if (ext === ".wav") mime = "audio/wav";
   else if (ext === ".png") mime = "image/png";
+  const disposition =
+    ext === ".wav" || ext === ".png"
+      ? `attachment; filename="${path.basename(fileName).replace(/"/g, "%22")}"`
+      : "attachment";
   return new NextResponse(new Uint8Array(buf), {
     headers: {
       "Content-Type": mime,
       "Content-Length": String(buf.length),
+      "Content-Disposition": disposition,
       "Cache-Control": "public, max-age=3600",
     },
   });

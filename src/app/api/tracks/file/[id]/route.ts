@@ -33,6 +33,7 @@ export async function GET(
     return new NextResponse(new Uint8Array(data), {
       headers: {
         "Content-Type": mime,
+        "Content-Disposition": 'attachment; filename="audio.wav"',
         "Cache-Control": "public, max-age=3600",
       },
     });
