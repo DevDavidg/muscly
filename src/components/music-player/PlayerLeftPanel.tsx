@@ -36,6 +36,7 @@ interface PlayerLeftPanelProps {
   stableThemeLabel: string;
   volume: number;
   isPlaying: boolean;
+  trackLoading?: boolean;
   coverAuraStyle: React.CSSProperties;
   onSeek: (time: number) => void;
   onSeekStart: () => void;
@@ -60,6 +61,7 @@ export default function PlayerLeftPanel({
   stableThemeLabel,
   volume,
   isPlaying,
+  trackLoading = false,
   coverAuraStyle,
   onSeek,
   onSeekStart,
@@ -177,9 +179,11 @@ export default function PlayerLeftPanel({
                 {currentTrack?.title || "Select a track"}
               </h2>
               <p className="text-neutral-500 text-xs md:text-sm font-medium">
-                {currentTrack
-                  ? `Playing Now • ${stableThemeLabel}`
-                  : "Ready to play"}
+                {trackLoading
+                  ? "Cargando..."
+                  : currentTrack
+                    ? `Playing Now • ${stableThemeLabel}`
+                    : "Ready to play"}
               </p>
             </div>
 
@@ -215,10 +219,12 @@ export default function PlayerLeftPanel({
               </button>
               <button
                 onClick={onTogglePlay}
-                disabled={!currentTrack}
+                disabled={!currentTrack || trackLoading}
                 className="h-14 w-14 md:h-16 md:w-16 flex items-center justify-center bg-white text-black rounded-full hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
               >
-                {isPlaying ? (
+                {trackLoading ? (
+                  <span className="h-6 w-6 md:h-7 md:w-7 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                ) : isPlaying ? (
                   <Pause size={24} className="md:w-7 md:h-7" fill="currentColor" />
                 ) : (
                   <Play size={24} className="md:w-7 md:h-7 ml-0.5 md:ml-1" fill="currentColor" />

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import type { MusicPlayerProps } from "./music-player-types";
 import { useMusicPlayer } from "./use-music-player";
 import PlayerLoadingScreen from "./PlayerLoadingScreen";
@@ -8,7 +9,27 @@ import TrackResultToast from "./TrackResultToast";
 import PlayerLeftPanel from "./PlayerLeftPanel";
 import TrackLibrary from "./TrackLibrary";
 
-export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
+function LocalFallbackToast() {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(false), 2000);
+    return () => clearTimeout(t);
+  }, []);
+  if (!visible) return null;
+  return (
+    <div
+      className="absolute top-3 right-3 z-10 max-w-[280px] rounded-lg bg-neutral-800/95 px-3 py-2 text-[11px] text-neutral-400 shadow-lg backdrop-blur-sm transition-opacity duration-300"
+      role="status"
+    >
+      Sin DATABASE_URL: usando temas locales. En Vercel: Project Settings → Environment Variables → añade DATABASE_URL con la connection string de Neon.
+    </div>
+  );
+}
+
+export default function MusicPlayer({
+  initialTracks,
+  localFallback = false,
+}: MusicPlayerProps) {
   const player = useMusicPlayer(initialTracks);
   const audioRef = player.audioRef;
 
@@ -71,6 +92,9 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
 
   return (
     <main className="relative flex min-h-screen flex-col overflow-hidden bg-neutral-950 text-neutral-50 md:flex-row">
+      {localFallback && (
+        <LocalFallbackToast />
+      )}
       <div
         className="pointer-events-none absolute inset-0 transition-all duration-200"
         style={backdropStyle}
@@ -91,6 +115,7 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
         stableThemeLabel={player.stableThemeLabel}
         volume={player.volume}
         isPlaying={player.isPlaying}
+        trackLoading={player.trackLoading}
         coverAuraStyle={coverAuraStyle}
         onSeek={handleSeek}
         onSeekStart={handleSeekStart}

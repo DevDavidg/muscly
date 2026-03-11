@@ -31,6 +31,7 @@ export function useMusicPlayer(initialTracks: Track[]) {
   const [stableThemeLabel, setStableThemeLabel] = useState("Idle");
   const [trackResultToast, setTrackResultToast] =
     useState<TrackResultToast | null>(null);
+  const [trackLoading, setTrackLoading] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const coverImgRef = useRef<HTMLImageElement | null>(null);
@@ -110,30 +111,58 @@ export function useMusicPlayer(initialTracks: Track[]) {
         audioRef.current.onended = null;
       }
       let audio = audioCache.current.get(track.fileName);
+      const needsLoad = !audio;
       if (!audio) {
+        setTrackLoading(true);
         audio = new Audio(track.audioUrl);
         audio.preload = "auto";
         audio.crossOrigin = "anonymous";
         audioCache.current.set(track.fileName, audio);
       }
+      const onReady = () => {
+        setTrackLoading(false);
+        audio.removeEventListener("canplaythrough", onReady);
+        audio.removeEventListener("error", onReady);
+      };
+      audio.addEventListener("canplaythrough", onReady);
+      audio.addEventListener("error", onReady);
       audio.currentTime = 0;
       audioRef.current = audio;
-      audio.onloadedmetadata = () => setDuration(audio.duration);
+      if (!needsLoad) setTrackLoading(false);
+      audio.onloadedmetadata = () =>
+        setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
       connectBass(audio);
       audio.play().catch((err) => {
         if (err?.name !== "AbortError") console.error("Play failed:", err);
+        setTrackLoading(false);
       });
       setCurrentTrack(track);
       setCoverLoaded(false);
       setCoverSrc(track.coverUrl || null);
       setIsPlaying(true);
       setCurrentTime(0);
-      setDuration(audio.duration || 0);
+      setDuration(
+        track.duration > 0
+          ? track.duration
+          : Number.isFinite(audio.duration)
+            ? audio.duration
+            : 0
+      );
       setStableThemeLabel("Idle");
       themeCandidateRef.current = { label: "Idle", count: 0 };
       trackAnalysisRef.current = createTrackAnalysisSnapshot(track);
+      if (needsLoad) {
+        const idx = initialTracks.findIndex((t) => t.fileName === track.fileName);
+        const nextTrack = initialTracks[(idx + 1) % initialTracks.length];
+        if (nextTrack && !audioCache.current.has(nextTrack.fileName)) {
+          const nextAudio = new Audio(nextTrack.audioUrl);
+          nextAudio.preload = "auto";
+          nextAudio.crossOrigin = "anonymous";
+          audioCache.current.set(nextTrack.fileName, nextAudio);
+        }
+      }
     },
-    [currentTrack, togglePlay, connectBass]
+    [currentTrack, initialTracks, togglePlay, connectBass]
   );
 
   useEffect(() => {
@@ -160,16 +189,8 @@ export function useMusicPlayer(initialTracks: Track[]) {
 
   const handlePendingAutoPlay = useCallback(() => {
     if (pendingAutoPlay) {
-      const playWhenReady = () => {
-        const audio = audioCache.current.get(pendingAutoPlay.fileName);
-        if (audio && audio.readyState >= 2) {
-          playTrack(pendingAutoPlay);
-          setPendingAutoPlay(null);
-        } else {
-          setTimeout(playWhenReady, 100);
-        }
-      };
-      playWhenReady();
+      playTrack(pendingAutoPlay);
+      setPendingAutoPlay(null);
     }
   }, [pendingAutoPlay, playTrack]);
 
@@ -244,7 +265,7 @@ export function useMusicPlayer(initialTracks: Track[]) {
   });
 
   const formatTime = (time: number) => {
-    if (isNaN(time)) return "0:00";
+    if (!Number.isFinite(time) || time < 0) return "0:00";
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
@@ -255,6 +276,7 @@ export function useMusicPlayer(initialTracks: Track[]) {
     loadProgress,
     loadStatus,
     loadElapsedMs,
+    trackLoading,
     copiedTrackId,
     pendingAutoPlay,
     pendingCoverError,

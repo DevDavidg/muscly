@@ -2,6 +2,7 @@ import { Track } from "@/lib/data";
 
 export interface MusicPlayerProps {
   initialTracks: Track[];
+  localFallback?: boolean;
 }
 
 export interface TrackAnalysisSnapshot {

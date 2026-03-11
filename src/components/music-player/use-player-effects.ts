@@ -42,7 +42,9 @@ export function usePlayerEffects({
     const handleTimeUpdate = () => {
       if (!isSeekingRef.current) {
         setCurrentTime(audio.currentTime);
-        setDuration(audio.duration || 0);
+        setDuration(
+          Number.isFinite(audio.duration) ? audio.duration : 0
+        );
       }
     };
     const handleEnded = () => {
