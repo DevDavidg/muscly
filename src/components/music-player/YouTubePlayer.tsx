@@ -10,6 +10,7 @@ declare global {
         el: string | HTMLElement,
         opts: {
           videoId: string;
+          playerVars?: { origin?: string };
           events?: { onReady?: (ev: { target: YTPlayer }) => void };
         }
       ) => YTPlayer;
@@ -77,13 +78,12 @@ export default function YouTubePlayer({
     };
 
     const initPlayer = () => {
-      const win = globalThis as Window;
-      if (!win.YT) return;
-      const yt = win.YT;
+      if (typeof window === "undefined" || !window.YT) return;
+      const yt = window.YT;
       const ytPlayer = new yt.Player(containerId, {
         videoId,
         playerVars: {
-          origin: win.location?.origin ?? "",
+          origin: window.location?.origin ?? "",
         },
         events: {
           onReady(ev: { target: YTPlayer }) {
@@ -102,7 +102,7 @@ export default function YouTubePlayer({
       });
     };
 
-    if ((globalThis as Window).YT) {
+    if (typeof window !== "undefined" && window.YT) {
       initPlayer();
       return () => {
         playerRef.current = null;
@@ -114,9 +114,8 @@ export default function YouTubePlayer({
       };
     }
 
-    const win = globalThis as Window;
-    const prev = win.onYouTubeIframeAPIReady;
-    win.onYouTubeIframeAPIReady = () => {
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
       prev?.();
       initPlayer();
     };
@@ -127,7 +126,7 @@ export default function YouTubePlayer({
     first?.parentNode?.insertBefore(tag, first);
 
     return () => {
-      win.onYouTubeIframeAPIReady = prev;
+      window.onYouTubeIframeAPIReady = prev;
       playerRef.current = null;
       playerInstanceRef.current = null;
       if (pollRef.current) {
