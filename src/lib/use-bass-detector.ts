@@ -11,6 +11,7 @@ interface UseBassDetectorOptions {
 interface UseBassDetectorReturn {
   bassData: BassData;
   connect: (audioElement: HTMLAudioElement) => void;
+  connectStream: (stream: MediaStream) => void;
   disconnect: () => void;
   setThreshold: (value: number) => void;
 }
@@ -36,6 +37,14 @@ export function useBassDetector(
     [enabled]
   );
 
+  const connectStream = useCallback(
+    (stream: MediaStream) => {
+      if (!enabled) return;
+      detectorRef.current.connectStream(stream, setBassData);
+    },
+    [enabled]
+  );
+
   const disconnect = useCallback(() => {
     detectorRef.current.disconnect();
     setBassData(emptyBassData);
@@ -55,6 +64,7 @@ export function useBassDetector(
   return {
     bassData,
     connect,
+    connectStream,
     disconnect,
     setThreshold,
   };

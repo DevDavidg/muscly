@@ -72,13 +72,14 @@ function getLocalTracks(): Track[] {
       fs.existsSync(wavPath) && fs.statSync(wavPath).isFile()
         ? readWavDurationSeconds(wavPath)
         : 0;
+    const audioUrl = `/temas/${encodeURIComponent(fileName)}`;
     return {
       id: `local-${i}-${title}`,
       title,
       fileName,
       coverName: hasCover ? "portada.png" : null,
-      audioUrl: `/api/tracks/local/${encodeURIComponent(fileName)}`,
-      coverUrl: hasCover ? "/api/tracks/local/portada.png" : null,
+      audioUrl,
+      coverUrl: hasCover ? "/temas/portada.png" : null,
       duration: Math.round(duration),
       released: true,
       notLicenced: false,

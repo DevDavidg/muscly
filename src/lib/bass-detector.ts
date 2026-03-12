@@ -34,7 +34,7 @@ export const emptyBassData: BassData = {
 
 interface AudioNodeCache {
   context: AudioContext;
-  source: MediaElementAudioSourceNode;
+  source: MediaElementAudioSourceNode | MediaStreamAudioSourceNode;
   analyser: AnalyserNode;
 }
 
@@ -55,6 +55,7 @@ export class BassDetector {
   private animationId: number | null = null;
   private callback: BassCallback | null = null;
   private connectedElement: HTMLAudioElement | null = null;
+  private connectedStream: MediaStream | null = null;
   private energyHistory: number[] = [];
   private sub808History: number[] = [];
   private meydaAnalyzer: ReturnType<typeof Meyda.createMeydaAnalyzer> | null =
@@ -113,6 +114,39 @@ export class BassDetector {
       void cache.context.resume();
     }
 
+    this.startMeyda(cache);
+    this.startAnalysis();
+  }
+
+  connectStream(stream: MediaStream, callback: BassCallback): void {
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
+    this.stopMeyda();
+    this.callback = callback;
+    this.connectedElement = null;
+    this.connectedStream = stream;
+    this.energyHistory = [];
+    this.sub808History = [];
+    this.frameCount = 0;
+    this.meydaFeatures = {};
+    this.isMobile =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      ) || window.innerWidth < 768;
+    const context = new AudioContext();
+    const source = context.createMediaStreamSource(stream);
+    const analyser = context.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.78;
+    source.connect(analyser);
+    const cache: AudioNodeCache = { context, source, analyser };
+    this.currentCache = cache;
+    this.dataArray = new Uint8Array(cache.analyser.frequencyBinCount);
+    if (context.state === "suspended") {
+      void context.resume();
+    }
     this.startMeyda(cache);
     this.startAnalysis();
   }
@@ -371,13 +405,16 @@ export class BassDetector {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;
     }
-
     this.stopMeyda();
     this.callback = null;
     this.dataArray = null;
     this.energyHistory = [];
     this.sub808History = [];
     this.connectedElement = null;
+    if (this.connectedStream) {
+      this.connectedStream.getTracks().forEach((t) => t.stop());
+      this.connectedStream = null;
+    }
     this.currentCache = null;
     this.meydaFeatures = {};
   }

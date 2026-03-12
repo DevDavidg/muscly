@@ -31,12 +31,8 @@ export default function MusicPlayer({
   localFallback = false,
 }: MusicPlayerProps) {
   const player = useMusicPlayer(initialTracks);
-  const audioRef = player.audioRef;
 
-  const handleSeek = (time: number) => {
-    player.setCurrentTime(time);
-    if (audioRef.current) audioRef.current.currentTime = time;
-  };
+  const handleSeek = (time: number) => player.handleSeek(time);
 
   const handleSeekStart = () => {
     player.isSeekingRef.current = true;
@@ -117,7 +113,20 @@ export default function MusicPlayer({
         isPlaying={player.isPlaying}
         trackLoading={player.trackLoading}
         coverAuraStyle={coverAuraStyle}
+        youtubeUrl={player.youtubeUrl}
+        setYoutubeUrl={player.setYoutubeUrl}
+        youtubeVideoTitle={player.youtubeVideoTitle}
+        youtubeDuration={player.youtubeDuration}
+        youtubeCurrentTime={player.youtubeCurrentTime}
+        youtubePlaying={player.youtubePlaying}
+        setYoutubeDuration={player.setYoutubeDuration}
+        setYoutubeCurrentTime={player.setYoutubeCurrentTime}
+        setYoutubePlaying={player.setYoutubePlaying}
+        youtubePlayerRef={player.youtubePlayerRef}
         onSeek={handleSeek}
+        tabCaptureActive={player.tabCaptureActive}
+        onStartTabCapture={player.startTabCapture}
+        onStopTabCapture={player.stopTabCapture}
         onSeekStart={handleSeekStart}
         onSeekEnd={handleSeekEnd}
         onVolumeChange={player.setVolume}

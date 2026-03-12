@@ -8,10 +8,13 @@ import {
   SkipForward,
   Volume2,
   VolumeX,
+  Video,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SpectrumVisualizer from "../SpectrumVisualizer";
 import TrackThemeAnalyzer from "../TrackThemeAnalyzer";
+import YouTubePlayer from "./YouTubePlayer";
 
 interface PlayerLeftPanelProps {
   coverSrc: string | null;
@@ -38,6 +41,23 @@ interface PlayerLeftPanelProps {
   isPlaying: boolean;
   trackLoading?: boolean;
   coverAuraStyle: React.CSSProperties;
+  youtubeUrl: string;
+  setYoutubeUrl: (url: string) => void;
+  youtubeVideoTitle: string;
+  youtubeDuration: number;
+  youtubeCurrentTime: number;
+  youtubePlaying: boolean;
+  setYoutubeDuration: (d: number) => void;
+  setYoutubeCurrentTime: (t: number) => void;
+  setYoutubePlaying: (p: boolean) => void;
+  youtubePlayerRef: React.MutableRefObject<{
+    play: () => void;
+    pause: () => void;
+    seekTo: (s: number) => void;
+  } | null>;
+  tabCaptureActive: boolean;
+  onStartTabCapture: () => void;
+  onStopTabCapture: () => void;
   onSeek: (time: number) => void;
   onSeekStart: () => void;
   onSeekEnd: () => void;
@@ -63,6 +83,19 @@ export default function PlayerLeftPanel({
   isPlaying,
   trackLoading = false,
   coverAuraStyle,
+  youtubeUrl,
+  setYoutubeUrl,
+  youtubeVideoTitle,
+  youtubeDuration,
+  youtubeCurrentTime,
+  youtubePlaying,
+  setYoutubeDuration,
+  setYoutubeCurrentTime,
+  setYoutubePlaying,
+  youtubePlayerRef,
+  tabCaptureActive,
+  onStartTabCapture,
+  onStopTabCapture,
   onSeek,
   onSeekStart,
   onSeekEnd,
@@ -72,6 +105,20 @@ export default function PlayerLeftPanel({
   onPlayNext,
   formatTime,
 }: PlayerLeftPanelProps) {
+  const youtubeId =
+    youtubeUrl &&
+    (() => {
+      const m =
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/.exec(
+          youtubeUrl
+        );
+      return m ? m[1] : null;
+    })();
+
+  const displayTime = currentTrack ? currentTime : youtubeCurrentTime;
+  const displayDuration = currentTrack ? duration : youtubeDuration;
+  const displayPlaying = currentTrack ? isPlaying : youtubePlaying;
+
   const w = Number.isFinite(bassData.warmth) ? bassData.warmth : 0;
   const b = Number.isFinite(bassData.brightness) ? bassData.brightness : 0;
   const m = Number.isFinite(bassData.motion) ? bassData.motion : 0;
@@ -110,7 +157,15 @@ export default function PlayerLeftPanel({
                 boxShadow: `0 30px 70px rgba(0,0,0,0.45), 0 0 45px rgba(168,85,247,${0.08 + i * 0.28})`,
               }}
             >
-              {coverSrc ? (
+              {youtubeId ? (
+                <YouTubePlayer
+                  videoId={youtubeId}
+                  playerRef={youtubePlayerRef}
+                  onDuration={setYoutubeDuration}
+                  onTimeUpdate={setYoutubeCurrentTime}
+                  onPlayingChange={setYoutubePlaying}
+                />
+              ) : coverSrc ? (
                 <img
                   ref={coverImgRef}
                   src={coverSrc}
@@ -126,6 +181,40 @@ export default function PlayerLeftPanel({
                 <div className="flex flex-col items-center justify-center h-full text-neutral-800">
                   <Music size={80} />
                 </div>
+              )}
+            </div>
+            <div className="relative z-20 mt-2 space-y-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="url"
+                  placeholder="YouTube URL"
+                  value={youtubeUrl}
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                  className="flex-1 min-w-0 rounded-lg border border-neutral-700 bg-neutral-800/80 px-2.5 py-1.5 text-xs text-neutral-200 placeholder:text-neutral-500 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                />
+                {youtubeUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => setYoutubeUrl("")}
+                    className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-700 hover:text-white transition-colors"
+                    aria-label="Quitar video"
+                  >
+                    <X size={14} />
+                  </button>
+                ) : (
+                  <span className="rounded-lg p-1.5 text-neutral-600" aria-hidden>
+                    <Video size={14} />
+                  </span>
+                )}
+              </div>
+              {youtubeId && (
+                <button
+                  type="button"
+                  onClick={tabCaptureActive ? onStopTabCapture : onStartTabCapture}
+                  className="w-full rounded-lg border border-neutral-600 bg-neutral-800/80 px-2.5 py-1.5 text-xs font-medium text-neutral-300 hover:bg-neutral-700 hover:text-white transition-colors"
+                >
+                  {tabCaptureActive ? "Dejar de analizar audio" : "Analizar audio del video (compartir pestaña)"}
+                </button>
               )}
             </div>
           </div>
@@ -176,14 +265,18 @@ export default function PlayerLeftPanel({
           <div className="space-y-3 pt-1 md:space-y-4">
             <div className="space-y-1 text-center">
               <h2 className="text-xl md:text-2xl font-bold truncate">
-                {currentTrack?.title || "Select a track"}
+                {currentTrack?.title ||
+                  youtubeVideoTitle ||
+                  "Select a track"}
               </h2>
               <p className="text-neutral-500 text-xs md:text-sm font-medium">
                 {trackLoading
                   ? "Cargando..."
                   : currentTrack
                     ? `Playing Now • ${stableThemeLabel}`
-                    : "Ready to play"}
+                    : youtubeVideoTitle
+                      ? "Video"
+                      : "Ready to play"}
               </p>
             </div>
 
@@ -191,21 +284,21 @@ export default function PlayerLeftPanel({
               <input
                 type="range"
                 min={0}
-                max={duration || 1}
+                max={displayDuration || 1}
                 step={0.01}
-                value={currentTime}
-                onChange={(e) => onSeek(parseFloat(e.target.value))}
+                value={displayTime}
+                onChange={(e) => onSeek(Number.parseFloat(e.target.value))}
                 onPointerDown={onSeekStart}
                 onPointerUp={onSeekEnd}
                 className="w-full"
                 style={{
-                  background: `linear-gradient(to right, rgba(255,255,255,0.85) ${duration ? (currentTime / duration) * 100 : 0}%, rgb(38,38,38) ${duration ? (currentTime / duration) * 100 : 0}%)`,
+                  background: `linear-gradient(to right, rgba(255,255,255,0.85) ${displayDuration ? (displayTime / displayDuration) * 100 : 0}%, rgb(38,38,38) ${displayDuration ? (displayTime / displayDuration) * 100 : 0}%)`,
                   borderRadius: "9999px",
                 }}
               />
               <div className="flex justify-between text-[11px] text-neutral-500 font-mono">
-                <span>{formatTime(currentTime)}</span>
-                <span>{formatTime(duration)}</span>
+                <span>{formatTime(displayTime)}</span>
+                <span>{formatTime(displayDuration)}</span>
               </div>
             </div>
 
@@ -219,12 +312,12 @@ export default function PlayerLeftPanel({
               </button>
               <button
                 onClick={onTogglePlay}
-                disabled={!currentTrack || trackLoading}
+                disabled={(!currentTrack && !youtubeId) || trackLoading}
                 className="h-14 w-14 md:h-16 md:w-16 flex items-center justify-center bg-white text-black rounded-full hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
               >
                 {trackLoading ? (
                   <span className="h-6 w-6 md:h-7 md:w-7 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                ) : isPlaying ? (
+                ) : displayPlaying ? (
                   <Pause size={24} className="md:w-7 md:h-7" fill="currentColor" />
                 ) : (
                   <Play size={24} className="md:w-7 md:h-7 ml-0.5 md:ml-1" fill="currentColor" />

@@ -17,7 +17,9 @@ export async function GET(
   if (!resolved.startsWith(TEMAS_DIR)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  if (!fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) {
+  const exists = fs.existsSync(resolved);
+  const isFile = exists && fs.statSync(resolved).isFile();
+  if (!exists || !isFile) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   const buf = fs.readFileSync(resolved);
@@ -29,7 +31,17 @@ export async function GET(
     ext === ".wav" || ext === ".png"
       ? `attachment; filename="${path.basename(fileName).replace(/"/g, "%22")}"`
       : "attachment";
-  return new NextResponse(new Uint8Array(buf), {
+  const CHUNK = 64 * 1024;
+  const body = new ReadableStream({
+    start(controller) {
+      for (let i = 0; i < buf.length; i += CHUNK) {
+        const slice = buf.subarray(i, Math.min(i + CHUNK, buf.length));
+        controller.enqueue(new Uint8Array(slice));
+      }
+      controller.close();
+    },
+  });
+  return new NextResponse(body, {
     headers: {
       "Content-Type": mime,
       "Content-Length": String(buf.length),

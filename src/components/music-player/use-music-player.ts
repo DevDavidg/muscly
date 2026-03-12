@@ -12,6 +12,10 @@ import {
   createTrackAnalysisSnapshot,
   getDisplayThemeLabel as getThemeLabel,
 } from "./track-analysis-utils";
+import {
+  createYoutubeIdleBassData,
+  getNextSyntheticBassData,
+} from "@/lib/youtube-synthetic-bass";
 
 export function useMusicPlayer(initialTracks: Track[]) {
   const searchParams = useSearchParams();
@@ -32,6 +36,20 @@ export function useMusicPlayer(initialTracks: Track[]) {
   const [trackResultToast, setTrackResultToast] =
     useState<TrackResultToast | null>(null);
   const [trackLoading, setTrackLoading] = useState(false);
+  const [youtubeUrl, setYoutubeUrl] = useState<string>("");
+  const [youtubeVideoTitle, setYoutubeVideoTitle] = useState<string>("");
+  const [youtubeDuration, setYoutubeDuration] = useState(0);
+  const [youtubeCurrentTime, setYoutubeCurrentTime] = useState(0);
+  const [youtubePlaying, setYoutubePlaying] = useState(false);
+  const [syntheticBassData, setSyntheticBassData] = useState(() =>
+    createYoutubeIdleBassData()
+  );
+
+  const youtubePlayerRef = useRef<{
+    play: () => void;
+    pause: () => void;
+    seekTo: (s: number) => void;
+  } | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const coverImgRef = useRef<HTMLImageElement | null>(null);
@@ -40,11 +58,16 @@ export function useMusicPlayer(initialTracks: Track[]) {
   const themeCandidateRef = useRef({ label: "Idle", count: 0 });
   const trackAnalysisRef = useRef<TrackAnalysisSnapshot | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const syntheticFreqRef = useRef(new Uint8Array(1024));
+  const youtubeIdleBassRef = useRef(createYoutubeIdleBassData());
 
-  const { bassData, connect: connectBass } = useBassDetector({
+  const { bassData, connect: connectBass, connectStream, disconnect: disconnectBass } = useBassDetector({
     enabled: true,
     threshold: 1.4,
   });
+
+  const [tabCaptureActive, setTabCaptureActive] = useState(false);
+  const capturedStreamRef = useRef<MediaStream | null>(null);
 
   const getDisplayThemeLabel = useCallback(
     (themeLabel: string, subPeak: boolean, intensity: number) =>
@@ -86,18 +109,23 @@ export function useMusicPlayer(initialTracks: Track[]) {
       await navigator.clipboard.writeText(url);
       setCopiedTrackId(track.id);
       setTimeout(() => setCopiedTrackId(null), 2000);
-    } catch (err) {
-      console.error("Failed to copy link:", err);
+    } catch {
     }
   };
 
   const togglePlay = useCallback(() => {
+    if (youtubePlayerRef.current && !currentTrack) {
+      if (youtubePlaying) youtubePlayerRef.current.pause();
+      else youtubePlayerRef.current.play();
+      setYoutubePlaying(!youtubePlaying);
+      return;
+    }
     if (audioRef.current) {
       if (isPlaying) audioRef.current.pause();
       else audioRef.current.play();
       setIsPlaying(!isPlaying);
     }
-  }, [isPlaying]);
+  }, [isPlaying, youtubePlaying, currentTrack]);
 
   const playTrack = useCallback(
     (track: Track) => {
@@ -118,6 +146,7 @@ export function useMusicPlayer(initialTracks: Track[]) {
         audio.preload = "auto";
         audio.crossOrigin = "anonymous";
         audioCache.current.set(track.fileName, audio);
+        audio.addEventListener("error", () => setTrackLoading(false));
       }
       const onReady = () => {
         setTrackLoading(false);
@@ -132,10 +161,7 @@ export function useMusicPlayer(initialTracks: Track[]) {
       audio.onloadedmetadata = () =>
         setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
       connectBass(audio);
-      audio.play().catch((err) => {
-        if (err?.name !== "AbortError") console.error("Play failed:", err);
-        setTrackLoading(false);
-      });
+      audio.play().catch(() => setTrackLoading(false));
       setCurrentTrack(track);
       setCoverLoaded(false);
       setCoverSrc(track.coverUrl || null);
@@ -164,6 +190,78 @@ export function useMusicPlayer(initialTracks: Track[]) {
     },
     [currentTrack, initialTracks, togglePlay, connectBass]
   );
+
+  const getYoutubeVideoId = useCallback((url: string) => {
+    const m =
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/.exec(
+        url
+      );
+    return m ? m[1] : null;
+  }, []);
+
+  useEffect(() => {
+    if (!youtubeUrl) {
+      setYoutubeVideoTitle("");
+      return;
+    }
+    const id = getYoutubeVideoId(youtubeUrl);
+    if (!id) {
+      setYoutubeVideoTitle("");
+      return;
+    }
+    let cancelled = false;
+    const url = `https://www.youtube.com/oembed?url=${encodeURIComponent(
+      `https://www.youtube.com/watch?v=${id}`
+    )}&format=json`;
+    fetch(url)
+      .then((r) => r.json())
+      .then((data: { title?: string }) => {
+        if (!cancelled && data?.title) setYoutubeVideoTitle(data.title);
+      })
+      .catch(() => {
+        if (!cancelled) setYoutubeVideoTitle("");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [youtubeUrl, getYoutubeVideoId]);
+
+  useEffect(() => {
+    if (youtubeUrl && !currentTrack) setStableThemeLabel("Video");
+  }, [youtubeUrl, currentTrack]);
+
+  useEffect(() => {
+    if (!youtubeUrl) {
+      setYoutubeDuration(0);
+      setYoutubeCurrentTime(0);
+      setYoutubePlaying(false);
+      youtubePlayerRef.current = null;
+      disconnectBass();
+      capturedStreamRef.current?.getTracks().forEach((t) => t.stop());
+      capturedStreamRef.current = null;
+      setTabCaptureActive(false);
+    }
+  }, [youtubeUrl, disconnectBass]);
+
+  useEffect(() => {
+    const id = getYoutubeVideoId(youtubeUrl);
+    if (!id || currentTrack || tabCaptureActive) {
+      setSyntheticBassData(youtubeIdleBassRef.current);
+      return;
+    }
+    let rafId = 0;
+    const tick = () => {
+      rafId = requestAnimationFrame(tick);
+      setSyntheticBassData(
+        getNextSyntheticBassData(
+          syntheticFreqRef.current,
+          performance.now()
+        )
+      );
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [youtubeUrl, currentTrack, tabCaptureActive, getYoutubeVideoId]);
 
   useEffect(() => {
     if (!isLoading && initialTracks.length > 0) {
@@ -271,6 +369,61 @@ export function useMusicPlayer(initialTracks: Track[]) {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
+  const handleSeek = useCallback(
+    (time: number) => {
+      if (youtubePlayerRef.current && !currentTrack) {
+        youtubePlayerRef.current.seekTo(time);
+        setYoutubeCurrentTime(time);
+        return;
+      }
+      setCurrentTime(time);
+      if (audioRef.current) audioRef.current.currentTime = time;
+    },
+    [currentTrack]
+  );
+
+  const youtubeId = youtubeUrl ? getYoutubeVideoId(youtubeUrl) : null;
+  const displayBassData = currentTrack
+    ? bassData
+    : youtubeId && tabCaptureActive
+      ? bassData
+      : youtubeId
+        ? syntheticBassData
+        : youtubeIdleBassRef.current;
+  const displayStableThemeLabel = currentTrack
+    ? stableThemeLabel
+    : youtubeId && tabCaptureActive
+      ? bassData.themeLabel
+      : youtubeId
+        ? syntheticBassData.themeLabel
+        : "Video";
+
+  const startTabCapture = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: true,
+      });
+      capturedStreamRef.current = stream;
+      connectStream(stream);
+      setTabCaptureActive(true);
+      stream.getVideoTracks()[0]?.addEventListener("ended", () => {
+        disconnectBass();
+        capturedStreamRef.current = null;
+        setTabCaptureActive(false);
+      });
+    } catch {
+      setTabCaptureActive(false);
+    }
+  }, [connectStream, disconnectBass]);
+
+  const stopTabCapture = useCallback(() => {
+    disconnectBass();
+    capturedStreamRef.current?.getTracks().forEach((t) => t.stop());
+    capturedStreamRef.current = null;
+    setTabCaptureActive(false);
+  }, [disconnectBass]);
+
   return {
     isLoading,
     loadProgress,
@@ -292,10 +445,10 @@ export function useMusicPlayer(initialTracks: Track[]) {
     duration,
     currentTime,
     setCurrentTime,
-    stableThemeLabel,
     volume,
     setVolume,
-    bassData,
+    bassData: displayBassData,
+    stableThemeLabel: displayStableThemeLabel,
     audioRef,
     coverImgRef,
     isSeekingRef,
@@ -306,5 +459,19 @@ export function useMusicPlayer(initialTracks: Track[]) {
     playNext,
     playPrev,
     formatTime,
+    youtubeUrl,
+    setYoutubeUrl,
+    youtubeVideoTitle,
+    youtubeDuration,
+    youtubeCurrentTime,
+    youtubePlaying,
+    setYoutubeDuration,
+    setYoutubeCurrentTime,
+    setYoutubePlaying,
+    youtubePlayerRef,
+    handleSeek,
+    tabCaptureActive,
+    startTabCapture,
+    stopTabCapture,
   };
 }
