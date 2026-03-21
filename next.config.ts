@@ -9,6 +9,13 @@ const nextConfig: NextConfig = {
     root: projectRoot,
   },
   outputFileTracingRoot: projectRoot,
+  outputFileTracingExcludes: {
+    "*": [
+      "./public/temas/**/*.wav",
+      "./public/temas/**/*.png",
+      "./src/temas/**/*",
+    ],
+  },
 };
 
 export default nextConfig;
