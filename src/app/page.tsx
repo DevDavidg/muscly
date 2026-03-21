@@ -5,7 +5,7 @@ import MusicPlayer from "@/components/MusicPlayer";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const { tracks, localFallback } = await getTracks();
+  const tracks = await getTracks();
   return (
     <Suspense
       fallback={
@@ -14,7 +14,7 @@ export default async function Home() {
         </div>
       }
     >
-      <MusicPlayer initialTracks={tracks} localFallback={localFallback} />
+      <MusicPlayer initialTracks={tracks} />
     </Suspense>
   );
 }
