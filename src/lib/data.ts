@@ -1,5 +1,6 @@
 import path from "node:path";
 import fs from "node:fs";
+import { getGlobalScores } from "@/lib/votes";
 
 export interface Track {
   id: string;
@@ -35,7 +36,7 @@ export async function getTracks(): Promise<Track[]> {
     return [];
   }
   const hasCover = meta.coverName !== null && meta.coverName !== undefined;
-  return meta.tracks.map((t) => ({
+  const tracks = meta.tracks.map((t) => ({
     id: t.fileName,
     title: t.title,
     fileName: t.fileName,
@@ -46,4 +47,11 @@ export async function getTracks(): Promise<Track[]> {
     released: true,
     notLicenced: t.notLicenced,
   }));
+  const scores = await getGlobalScores(tracks.map((track) => track.id));
+  return tracks.sort((a, b) => {
+    const scoreA = scores.get(a.id) ?? 0;
+    const scoreB = scores.get(b.id) ?? 0;
+    if (scoreA !== scoreB) return scoreB - scoreA;
+    return a.title.localeCompare(b.title);
+  });
 }

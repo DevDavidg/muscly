@@ -1,8 +1,26 @@
 "use client";
 
-import { Music, Copy, Check, Play, Download } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Music,
+  Copy,
+  Check,
+  Play,
+  Download,
+  ThumbsUp,
+  ThumbsDown,
+} from "lucide-react";
 import { Track } from "@/lib/data";
 import { cn } from "@/lib/utils";
+
+type VoteValue = 1 | -1 | 0;
+
+interface TrackVoteSummary {
+  likes: number;
+  dislikes: number;
+  score: number;
+  userVote: VoteValue;
+}
 
 interface TrackLibraryProps {
   tracks: Track[];
@@ -23,9 +41,82 @@ export default function TrackLibrary({
   onPlayTrack,
   onCopyLink,
 }: TrackLibraryProps) {
-  const totalMinutes = Math.round(
-    tracks.reduce((s, t) => s + t.duration, 0) / 60
+  const [votesByTrack, setVotesByTrack] = useState<Record<string, TrackVoteSummary>>(
+    {}
   );
+  const [savingVoteId, setSavingVoteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const load = async () => {
+      const params = new URLSearchParams();
+      for (const track of tracks) params.append("trackId", track.id);
+      const response = await fetch(`/api/votes?${params.toString()}`, {
+        signal: controller.signal,
+        cache: "no-store",
+      });
+      if (!response.ok) return;
+      const data = (await response.json()) as Record<string, TrackVoteSummary>;
+      setVotesByTrack(data);
+    };
+    load().catch(() => {});
+    return () => controller.abort();
+  }, [tracks]);
+
+  const rankedTracks = useMemo(
+    () =>
+      [...tracks].sort((a, b) => {
+        const scoreA = votesByTrack[a.id]?.score ?? 0;
+        const scoreB = votesByTrack[b.id]?.score ?? 0;
+        if (scoreA !== scoreB) return scoreB - scoreA;
+        return a.title.localeCompare(b.title);
+      }),
+    [tracks, votesByTrack]
+  );
+
+  const totalMinutes = Math.round(
+    rankedTracks.reduce((s, t) => s + t.duration, 0) / 60
+  );
+
+  const voteTrack = async (track: Track, vote: 1 | -1, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (savingVoteId) return;
+    setSavingVoteId(track.id);
+    const previous = votesByTrack[track.id] ?? {
+      likes: 0,
+      dislikes: 0,
+      score: 0,
+      userVote: 0,
+    };
+    const next = { ...previous };
+    if (previous.userVote === 1) {
+      next.likes = Math.max(0, next.likes - 1);
+      next.score -= 1;
+    }
+    if (previous.userVote === -1) {
+      next.dislikes = Math.max(0, next.dislikes - 1);
+      next.score += 1;
+    }
+    if (vote === 1) {
+      next.likes += 1;
+      next.score += 1;
+    } else {
+      next.dislikes += 1;
+      next.score -= 1;
+    }
+    next.userVote = vote;
+    setVotesByTrack((current) => ({ ...current, [track.id]: next }));
+
+    const response = await fetch("/api/votes", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ trackId: track.id, vote }),
+    });
+    if (!response.ok) {
+      setVotesByTrack((current) => ({ ...current, [track.id]: previous }));
+    }
+    setSavingVoteId(null);
+  };
 
   return (
     <div className="w-full md:w-1/2 lg:w-3/5 bg-neutral-950 md:h-screen md:max-h-screen overflow-y-auto p-4 md:p-8 lg:p-12">
@@ -40,7 +131,7 @@ export default function TrackLibrary({
         </div>
 
         <div className="grid gap-1.5 md:gap-2">
-          {tracks.map((track, index) => (
+              {rankedTracks.map((track, index) => (
             <div
               key={track.id}
               onClick={() => onPlayTrack(track)}
@@ -144,6 +235,38 @@ export default function TrackLibrary({
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1 rounded-md border border-neutral-800 bg-neutral-900/70 px-1.5 py-1">
+                  <button
+                    onClick={(e) => voteTrack(track, 1, e)}
+                    className={cn(
+                      "flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] md:text-xs transition-colors",
+                      votesByTrack[track.id]?.userVote === 1
+                        ? "bg-emerald-500/30 text-emerald-300"
+                        : "text-neutral-400 hover:text-emerald-300"
+                    )}
+                    disabled={savingVoteId === track.id}
+                  >
+                    <ThumbsUp size={12} className="md:h-3.5 md:w-3.5" />
+                    <span className="font-mono tabular-nums">
+                      {votesByTrack[track.id]?.likes ?? 0}
+                    </span>
+                  </button>
+                  <button
+                    onClick={(e) => voteTrack(track, -1, e)}
+                    className={cn(
+                      "flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] md:text-xs transition-colors",
+                      votesByTrack[track.id]?.userVote === -1
+                        ? "bg-rose-500/30 text-rose-300"
+                        : "text-neutral-400 hover:text-rose-300"
+                    )}
+                    disabled={savingVoteId === track.id}
+                  >
+                    <ThumbsDown size={12} className="md:h-3.5 md:w-3.5" />
+                    <span className="font-mono tabular-nums">
+                      {votesByTrack[track.id]?.dislikes ?? 0}
+                    </span>
+                  </button>
+                </div>
                 <div className="text-[10px] md:text-xs text-neutral-600 font-mono tabular-nums">
                   {formatTime(track.duration)}
                 </div>
