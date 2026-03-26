@@ -43,5 +43,5 @@ export async function POST(request: NextRequest) {
       { status }
     );
   }
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, userVote: result.userVote });
 }

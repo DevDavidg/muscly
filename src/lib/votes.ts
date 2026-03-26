@@ -59,7 +59,7 @@ export async function upsertVote(params: {
   ipHash: string;
   vote: VoteValue;
 }): Promise<
-  | { ok: true }
+  | { ok: true; userVote: VoteValue | 0 }
   | {
       ok: false;
       reason:
@@ -70,16 +70,38 @@ export async function upsertVote(params: {
 > {
   const supabase = getSupabaseClient();
   if (!supabase.ok) return { ok: false, reason: "missing_service_role_key" };
-  const { error } = await supabase.client.from("track_votes").upsert(
+  const { data: existing, error: existingError } = await supabase.client
+    .from("track_votes")
+    .select("vote")
+    .eq("track_id", params.trackId)
+    .eq("voter_ip_hash", params.ipHash)
+    .maybeSingle<{ vote: VoteValue }>();
+
+  if (existingError) {
+    return { ok: false, reason: "supabase_error", details: existingError.message };
+  }
+
+  if (existing) {
+    const { error: deleteError } = await supabase.client
+      .from("track_votes")
+      .delete()
+      .eq("track_id", params.trackId)
+      .eq("voter_ip_hash", params.ipHash);
+    if (deleteError) {
+      return { ok: false, reason: "supabase_error", details: deleteError.message };
+    }
+    return { ok: true, userVote: 0 };
+  }
+
+  const { error } = await supabase.client.from("track_votes").insert(
     {
       track_id: params.trackId,
       voter_ip_hash: params.ipHash,
       vote: params.vote,
-    },
-    { onConflict: "track_id,voter_ip_hash" }
+    }
   );
   if (error) return { ok: false, reason: "supabase_error", details: error.message };
-  return { ok: true };
+  return { ok: true, userVote: params.vote };
 }
 
 export async function getVoteSummary(trackIds: string[], ipHash: string) {
