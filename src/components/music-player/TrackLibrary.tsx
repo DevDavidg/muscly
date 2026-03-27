@@ -10,7 +10,8 @@ import {
   ThumbsUp,
   ThumbsDown,
 } from "lucide-react";
-import { Track } from "@/lib/data";
+import { ALBUM_TITLE, LIBRARY_LABEL } from "@/lib/album-meta";
+import type { Track } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 type VoteValue = 1 | -1 | 0;
@@ -144,7 +145,12 @@ export default function TrackLibrary({
       <div className="mx-auto w-full max-w-2xl space-y-3 max-md:max-w-none md:space-y-6">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <h2 className="text-xl md:text-2xl font-bold mb-0.5">Library</h2>
+            <p className="text-neutral-500 text-[11px] font-semibold uppercase tracking-wider md:text-xs">
+              {LIBRARY_LABEL}
+            </p>
+            <h2 className="text-xl md:text-2xl font-bold mb-0.5 tracking-tight">
+              {ALBUM_TITLE}
+            </h2>
             <p className="text-neutral-500 text-xs md:text-sm">
               {tracks.length} tracks · {totalMinutes} min
             </p>

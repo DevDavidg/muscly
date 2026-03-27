@@ -11,6 +11,7 @@ import {
   Video,
   X,
 } from "lucide-react";
+import { ALBUM_TITLE, LIBRARY_LABEL } from "@/lib/album-meta";
 import { cn } from "@/lib/utils";
 import SpectrumVisualizer from "../SpectrumVisualizer";
 import TrackThemeAnalyzer from "../TrackThemeAnalyzer";
@@ -273,7 +274,7 @@ export default function PlayerLeftPanel({
                 {trackLoading
                   ? "Cargando..."
                   : currentTrack
-                    ? `Playing Now • ${stableThemeLabel}`
+                    ? `${ALBUM_TITLE} · ${LIBRARY_LABEL} · ${stableThemeLabel}`
                     : youtubeVideoTitle
                       ? "Video"
                       : "Ready to play"}

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Muscly",
-  description: "Local music player",
+  title: "INICIO — DavidG Library",
+  description: "INICIO · DavidG Library · 16 tracks",
   icons: {
     icon: "/favicon.svg",
   },
