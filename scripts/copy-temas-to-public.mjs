@@ -11,27 +11,45 @@ const META_NAME = "tracks-meta.json";
 function readWavDurationSeconds(filePath) {
   const fd = fs.openSync(filePath, "r");
   try {
-    const stat = fs.statSync(filePath);
-    const buf = Buffer.alloc(Math.min(512, stat.size));
-    fs.readSync(fd, buf, 0, buf.length, 0);
-    if (buf.length < 44) return 0;
-    if (buf.toString("ascii", 0, 4) !== "RIFF" || buf.toString("ascii", 8, 12) !== "WAVE")
+    const size = fs.statSync(filePath).size;
+    if (size < 12) return 0;
+    const hdr = Buffer.alloc(12);
+    fs.readSync(fd, hdr, 0, 12, 0);
+    if (hdr.toString("ascii", 0, 4) !== "RIFF" || hdr.toString("ascii", 8, 12) !== "WAVE")
       return 0;
-    let offset = 12;
+    let pos = 12;
     let byteRate = 0;
     let dataSize = 0;
-    while (offset + 8 <= buf.length) {
-      const chunkId = buf.toString("ascii", offset, offset + 4);
-      const chunkSize = buf.readUInt32LE(offset + 4);
+    let sampleRate = 0;
+    let channels = 0;
+    let bitsPerSample = 0;
+    while (pos + 8 <= size) {
+      const head = Buffer.alloc(8);
+      fs.readSync(fd, head, 0, 8, pos);
+      const chunkId = head.toString("ascii", 0, 4);
+      const chunkSize = head.readUInt32LE(4);
+      const dataStart = pos + 8;
       if (chunkId === "fmt ") {
-        if (offset + 16 <= buf.length) byteRate = buf.readUInt32LE(offset + 16);
+        const n = Math.min(chunkSize, 40);
+        const fmt = Buffer.alloc(n);
+        fs.readSync(fd, fmt, 0, n, dataStart);
+        if (n >= 16) {
+          channels = fmt.readUInt16LE(2);
+          sampleRate = fmt.readUInt32LE(4);
+          byteRate = fmt.readUInt32LE(8);
+          bitsPerSample = fmt.readUInt16LE(14);
+        }
       } else if (chunkId === "data") {
         dataSize = chunkSize;
         break;
       }
-      offset += 8 + chunkSize;
+      pos += 8 + chunkSize + (chunkSize % 2);
     }
     if (byteRate > 0 && dataSize > 0) return dataSize / byteRate;
+    if (sampleRate > 0 && channels > 0 && bitsPerSample > 0 && dataSize > 0) {
+      const bytesPerFrame = (channels * bitsPerSample) / 8;
+      return dataSize / bytesPerFrame / sampleRate;
+    }
     return 0;
   } finally {
     fs.closeSync(fd);

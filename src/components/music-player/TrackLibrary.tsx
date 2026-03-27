@@ -22,6 +22,21 @@ interface TrackVoteSummary {
   userVote: VoteValue;
 }
 
+const subgenreToneByName: Record<string, string> = {
+  Surf: "border-cyan-500/40 bg-cyan-500/15 text-cyan-300",
+  "Slime Trap": "border-lime-500/40 bg-lime-500/15 text-lime-300",
+  "Cloud Trap": "border-sky-500/40 bg-sky-500/15 text-sky-300",
+  "Dark Trap": "border-violet-500/40 bg-violet-500/15 text-violet-300",
+  Crank: "border-amber-500/40 bg-amber-500/15 text-amber-300",
+  "Boom Bap": "border-orange-500/40 bg-orange-500/15 text-orange-300",
+  "Melodic Trap": "border-fuchsia-500/40 bg-fuchsia-500/15 text-fuchsia-300",
+  "Goofy Trap": "border-emerald-500/40 bg-emerald-500/15 text-emerald-300",
+  "Hard Trap": "border-red-500/40 bg-red-500/15 text-red-300",
+  "Atlanta Trap": "border-indigo-500/40 bg-indigo-500/15 text-indigo-300",
+  "Emo Trap": "border-pink-500/40 bg-pink-500/15 text-pink-300",
+  "Surf Trap": "border-teal-500/40 bg-teal-500/15 text-teal-300",
+};
+
 interface TrackLibraryProps {
   tracks: Track[];
   currentTrack: Track | null;
@@ -207,6 +222,17 @@ export default function TrackLibrary({
                       >
                         {track.title}
                       </h3>
+                      {track.subgenre && (
+                        <span
+                          className={cn(
+                            "mt-1 inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-medium md:text-xs",
+                            subgenreToneByName[track.subgenre] ??
+                              "border-neutral-700 bg-neutral-800/70 text-neutral-300"
+                          )}
+                        >
+                          {track.subgenre}
+                        </span>
+                      )}
                       <p className="text-[10px] md:text-xs text-neutral-500 truncate flex items-center gap-1 flex-wrap">
                         {track.released ? (
                           <>
@@ -375,6 +401,17 @@ export default function TrackLibrary({
                 >
                   {track.title}
                 </h3>
+                {track.subgenre && (
+                  <span
+                    className={cn(
+                      "mt-1 inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-medium md:text-xs",
+                      subgenreToneByName[track.subgenre] ??
+                        "border-neutral-700 bg-neutral-800/70 text-neutral-300"
+                    )}
+                  >
+                    {track.subgenre}
+                  </span>
+                )}
                 <p className="text-[10px] md:text-xs text-neutral-500 truncate flex items-center gap-1 flex-wrap">
                   {track.released ? (
                     <>

@@ -6,6 +6,7 @@ export interface Track {
   id: string;
   title: string;
   fileName: string;
+  subgenre: string | null;
   coverName: string | null;
   audioUrl: string;
   coverUrl: string | null;
@@ -26,6 +27,25 @@ interface TracksMeta {
   }>;
 }
 
+const subgenreByTitle: Record<string, string> = {
+  "W∀X": "Surf",
+  "∀DO": "Slime Trap",
+  "∀SSP": "Cloud Trap",
+  "∀yBrda feat. (Gonza)": "Dark Trap",
+  "2%": "Crank",
+  "B∀K feat. (LEK)": "Boom Bap",
+  "FRƎE": "Dark Trap",
+  FTR3: "Melodic Trap",
+  "HRꓷ": "Goofy Trap",
+  "ICƎ": "Goofy Trap",
+  "MOLꞀY prod. (Satur)": "Hard Trap",
+  "MOVƎ": "Atlanta Trap",
+  "OЯO": "Hard Trap",
+  "VLЯ": "Emo Trap",
+  "и1cio": "Dark Trap",
+  "ꓷYƧ feat. (SXNTY)": "Surf Trap",
+};
+
 export async function getTracks(): Promise<Track[]> {
   const metaPath = path.join(process.cwd(), "public", "temas", "tracks-meta.json");
   if (!fs.existsSync(metaPath)) return [];
@@ -40,6 +60,7 @@ export async function getTracks(): Promise<Track[]> {
     id: t.fileName,
     title: t.title,
     fileName: t.fileName,
+    subgenre: subgenreByTitle[t.title] ?? null,
     coverName: meta.coverName,
     audioUrl: `/temas/${encodeURIComponent(t.fileName)}`,
     coverUrl: hasCover ? "/temas/portada.png" : null,

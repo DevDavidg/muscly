@@ -2,6 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 
+const VISIBLE_BARS = 64;
+const BAND_COUNT = 4;
+const BARS_PER_BAND = VISIBLE_BARS / BAND_COUNT;
+const AGC_ATTACK = 0.42;
+const AGC_RELEASE = 0.06;
+const ENV_FLOOR = 0.09;
+
 interface SpectrumVisualizerProps {
   data: Uint8Array;
   warmth?: number;
@@ -19,6 +26,9 @@ export default function SpectrumVisualizer({
 }: SpectrumVisualizerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const bandEnvelopeRef = useRef<number[]>(
+    Array.from({ length: BAND_COUNT }, () => 0.2),
+  );
   const [canvasWidth, setCanvasWidth] = useState(300);
   const canvasHeight = Math.max(36, Math.round(canvasWidth * 0.155));
 
@@ -57,13 +67,14 @@ export default function SpectrumVisualizer({
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
 
-    const visibleBars = Math.min(64, data.length);
+    const visibleBars = Math.min(VISIBLE_BARS, data.length);
     const sliceSize = Math.max(1, Math.floor(data.length / visibleBars));
     const barWidth = width / visibleBars;
     const baseLine = height * 0.9;
     const peakLineY = height * (0.18 + (1 - iVal) * 0.1);
 
-    ctx.shadowBlur = 14 + iVal * 20;
+    const barRaw: number[] = new Array(visibleBars);
+    const bandPeak = Array.from({ length: BAND_COUNT }, () => 0);
 
     for (let i = 0; i < visibleBars; i++) {
       let sum = 0;
@@ -72,7 +83,27 @@ export default function SpectrumVisualizer({
       for (let j = start; j < end; j++) sum += data[j];
 
       const value = sum / Math.max(1, end - start);
-      const normalized = value / 255;
+      barRaw[i] = value;
+      const b = Math.min(BAND_COUNT - 1, Math.floor(i / BARS_PER_BAND));
+      if (value > bandPeak[b]) bandPeak[b] = value;
+    }
+
+    const env = bandEnvelopeRef.current;
+    for (let b = 0; b < BAND_COUNT; b++) {
+      const target = bandPeak[b] / 255;
+      let e = env[b];
+      if (target > e) e += AGC_ATTACK * (target - e);
+      else e += AGC_RELEASE * (target - e);
+      e = Math.min(Math.max(e, ENV_FLOOR), 1);
+      env[b] = e;
+    }
+
+    ctx.shadowBlur = 14 + iVal * 20;
+
+    for (let i = 0; i < visibleBars; i++) {
+      const value = barRaw[i];
+      const b = Math.min(BAND_COUNT - 1, Math.floor(i / BARS_PER_BAND));
+      const normalized = Math.min(1, value / 255 / env[b]);
       const barHeight = normalized * height * (0.88 + mVal * 0.2);
       const x = i * barWidth;
       const hue = 316 - i * 2.1 - bVal * 56 + wVal * 18;
@@ -109,13 +140,9 @@ export default function SpectrumVisualizer({
     ctx.strokeStyle = `rgba(255,255,255,${0.2 + mVal * 0.25})`;
 
     for (let i = 0; i < visibleBars; i++) {
-      let sum = 0;
-      const start = i * sliceSize;
-      const end = Math.min(start + sliceSize, data.length);
-      for (let j = start; j < end; j++) sum += data[j];
-
-      const value = sum / Math.max(1, end - start);
-      const normalized = value / 255;
+      const value = barRaw[i];
+      const b = Math.min(BAND_COUNT - 1, Math.floor(i / BARS_PER_BAND));
+      const normalized = Math.min(1, value / 255 / env[b]);
       const x = i * barWidth + barWidth / 2;
       const y = height - normalized * height * 0.72;
 
