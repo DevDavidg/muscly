@@ -140,8 +140,8 @@ export default function TrackLibrary({
   };
 
   return (
-    <div className="w-full md:w-1/2 lg:w-3/5 bg-neutral-950 md:h-screen md:max-h-screen overflow-y-auto p-4 md:p-8 lg:p-12">
-      <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain bg-neutral-950 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:h-screen md:w-1/2 md:max-h-screen md:flex-none md:overflow-y-auto md:p-8 lg:w-3/5 lg:p-12">
+      <div className="mx-auto w-full max-w-2xl space-y-3 max-md:max-w-none md:space-y-6">
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="text-xl md:text-2xl font-bold mb-0.5">Library</h2>
@@ -170,16 +170,17 @@ export default function TrackLibrary({
                     key={track.id}
                     onClick={() => onPlayTrack(track)}
                     className={cn(
-                      "group flex items-center gap-3 md:gap-4 p-2.5 md:p-3 rounded-lg md:rounded-xl cursor-pointer transition-all border border-transparent",
+                      "group flex flex-col gap-2 p-2.5 sm:flex-row sm:items-center sm:gap-3 md:gap-4 md:p-3 rounded-lg md:rounded-xl cursor-pointer transition-all border border-transparent",
                       currentTrack?.fileName === track.fileName
                         ? "bg-neutral-900 border-neutral-800"
                         : "bg-neutral-950/70 hover:bg-neutral-900/50 hover:border-neutral-800/50"
                     )}
                   >
-                    <span className="text-neutral-600 font-mono text-xs md:text-sm w-4 md:w-5 text-right">
+                    <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3 md:gap-4">
+                    <span className="text-neutral-600 font-mono text-xs md:text-sm w-4 md:w-5 shrink-0 text-right">
                       {index + 1}
                     </span>
-                    <div className="relative h-10 w-10 md:h-12 md:w-12 rounded-md overflow-hidden bg-neutral-800 shrink-0">
+                    <div className="relative h-10 w-10 md:h-12 md:w-12 shrink-0 rounded-md overflow-hidden bg-neutral-800">
                       {track.coverUrl ? (
                         <img
                           src={track.coverUrl}
@@ -278,8 +279,9 @@ export default function TrackLibrary({
                         <span>•</span> WAV
                       </p>
                     </div>
+                    </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
                       <div className="flex items-center gap-1 rounded-md border border-neutral-800 bg-neutral-900/70 px-1.5 py-1">
                         <button
                           onClick={(e) => voteTrack(track, 1, e)}
@@ -319,14 +321,14 @@ export default function TrackLibrary({
                         href={track.audioUrl}
                         download={track.fileName}
                         onClick={(e) => e.stopPropagation()}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-neutral-800 rounded text-neutral-400 hover:text-white"
+                        className="rounded p-1.5 text-neutral-400 transition-opacity hover:bg-neutral-800 hover:text-white md:opacity-0 md:group-hover:opacity-100"
                         title="Descargar WAV"
                       >
                         <Download size={14} className="md:w-4 md:h-4" />
                       </a>
                       <button
                         onClick={(e) => onCopyLink(track, e)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-neutral-800 rounded"
+                        className="rounded p-1.5 transition-opacity hover:bg-neutral-800 md:opacity-0 md:group-hover:opacity-100"
                         title="Copy track link"
                       >
                         {copiedTrackId === track.id ? (
@@ -349,16 +351,17 @@ export default function TrackLibrary({
               key={track.id}
               onClick={() => onPlayTrack(track)}
               className={cn(
-                "group flex items-center gap-3 md:gap-4 p-2.5 md:p-3 rounded-lg md:rounded-xl cursor-pointer transition-all border border-transparent",
+                "group flex flex-col gap-2 p-2.5 sm:flex-row sm:items-center sm:gap-3 md:gap-4 md:p-3 rounded-lg md:rounded-xl cursor-pointer transition-all border border-transparent",
                 currentTrack?.fileName === track.fileName
                   ? "bg-neutral-900 border-neutral-800"
                   : "hover:bg-neutral-900/50 hover:border-neutral-800/50"
               )}
             >
-              <span className="text-neutral-600 font-mono text-xs md:text-sm w-4 md:w-5 text-right">
+              <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3 md:gap-4">
+              <span className="text-neutral-600 font-mono text-xs md:text-sm w-4 md:w-5 shrink-0 text-right">
                 {index + 4}
               </span>
-              <div className="relative h-10 w-10 md:h-12 md:w-12 rounded-md overflow-hidden bg-neutral-800 shrink-0">
+              <div className="relative h-10 w-10 md:h-12 md:w-12 shrink-0 rounded-md overflow-hidden bg-neutral-800">
                 {track.coverUrl ? (
                   <img
                     src={track.coverUrl}
@@ -457,8 +460,9 @@ export default function TrackLibrary({
                   <span>•</span> WAV
                 </p>
               </div>
+              </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
                 <div className="flex items-center gap-1 rounded-md border border-neutral-800 bg-neutral-900/70 px-1.5 py-1">
                   <button
                     onClick={(e) => voteTrack(track, 1, e)}
@@ -498,14 +502,14 @@ export default function TrackLibrary({
                   href={track.audioUrl}
                   download={track.fileName}
                   onClick={(e) => e.stopPropagation()}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-neutral-800 rounded text-neutral-400 hover:text-white"
+                  className="rounded p-1.5 text-neutral-400 transition-opacity hover:bg-neutral-800 hover:text-white md:opacity-0 md:group-hover:opacity-100"
                   title="Descargar WAV"
                 >
                   <Download size={14} className="md:w-4 md:h-4" />
                 </a>
                 <button
                   onClick={(e) => onCopyLink(track, e)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-neutral-800 rounded"
+                  className="rounded p-1.5 transition-opacity hover:bg-neutral-800 md:opacity-0 md:group-hover:opacity-100"
                   title="Copy track link"
                 >
                   {copiedTrackId === track.id ? (

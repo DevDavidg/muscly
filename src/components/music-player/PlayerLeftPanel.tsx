@@ -126,7 +126,7 @@ export default function PlayerLeftPanel({
   const sn = Number.isFinite(bassData.subNormalized) ? bassData.subNormalized : 0;
 
   return (
-    <div className="relative flex w-full min-h-[50vh] flex-col border-b border-neutral-800 p-4 md:h-screen md:max-h-screen md:w-1/2 md:flex-shrink-0 md:border-b-0 md:border-r md:p-6 lg:w-2/5">
+    <div className="relative flex w-full min-h-0 flex-col border-b border-neutral-800 p-4 max-md:min-h-[36dvh] max-md:max-h-[58dvh] max-md:flex-[1.2] max-md:overflow-y-auto max-md:overscroll-y-contain md:h-screen md:max-h-screen md:w-1/2 md:flex-initial md:shrink-0 md:overflow-visible md:border-b-0 md:border-r md:p-6 lg:w-2/5">
       <div className="absolute top-4 left-4 md:top-6 md:left-6 flex items-center gap-2">
         <img src="/favicon.svg" alt="Muscly" className="w-5 h-5 md:w-6 md:h-6" />
         <h1 className="text-lg font-bold tracking-tighter md:text-xl">MUSCLY</h1>

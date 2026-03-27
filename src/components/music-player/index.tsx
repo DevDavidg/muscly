@@ -66,7 +66,7 @@ export default function MusicPlayer({ initialTracks }: MusicPlayerProps) {
   } satisfies React.CSSProperties;
 
   return (
-    <main className="relative flex min-h-screen flex-col overflow-hidden bg-neutral-950 text-neutral-50 md:flex-row">
+    <main className="relative flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-neutral-950 text-neutral-50 md:h-auto md:max-h-none md:min-h-screen md:flex-row">
       <div
         className="pointer-events-none absolute inset-0 transition-all duration-200"
         style={backdropStyle}
